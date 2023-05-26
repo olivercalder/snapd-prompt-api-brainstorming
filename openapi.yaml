@@ -1,0 +1,575 @@
+openapi: 3.1.0
+info:
+  title: Prompting API
+  summary: The API for communication between snapd and prompt UI clients
+  version: 0.0.1
+  description: >
+    The API for communication between snapd and prompt UI clients.
+components:
+  schemas:
+    id:
+      description: >
+        The unique ID of a request.
+      type: integer
+    timestamp:
+      description: >
+        The timestamp at which a request was created or last modified.
+      type: string
+      format: date-time
+    name:
+      description: >
+        The name of the application which triggered the access request.
+      type: string
+    path:
+      description: >
+        The path of the resource being requested.
+      type: string
+    socket-path:
+      description: >
+        The path of the socket on which the UI client will listen for messages
+        from snapd.  When the 
+      type: string
+    resource-type:
+      description: >
+        The device type or path type of the resource being requested.
+        For example, a file, directory, or camera.
+      type: string
+      enum:
+        - file
+        - directory
+        - camera
+        - microphone
+        # TODO: add remaining resource types
+    permission:
+      description: >
+        The type of operation for which to apply a decision about access to a resource.
+      type: string
+      enum:
+        - execute       # AA_MAY_EXEC, process may execute another program
+        - write         # AA_MAY_WRITE, process may write to a file or socket
+        - read          # AA_MAY_READ, process may read from a file or socket, or enumerate directory contents
+        - append        # AA_MAY_APPEND, process may open a file in append mode
+        - create        # AA_MAY_CREATE, process may create a new file
+        - delete        # AA_MAY_DELETE, process may delete a file, directory, symbolic link, or socket
+        - open          # AA_MAY_OPEN, process may open a file or directory, the additional presence of write or read grants specific type of access
+        - rename        # AA_MAY_RENAME, process may rename a file
+        - setAttribute  # AA_MAY_SETATTR, not checked by the kernel
+        - getAttribute  # AA_MAY_GETATTR, not checked by the kernel
+        - setCredential # AA_MAY_SETCRED, not used in the kernel
+        - getCredential # AA_MAY_GETCRED, not used in the kernel
+        - changeMode    # AA_MAY_CHMOD, process may change UNIX file permissions
+        - changeOwner   # AA_MAY_CHOWN, process may change file ownership
+        - changeGroup   # AA_MAY_CHGRP, process may change the group ownership of a file
+        - lock          # AA_MAY_LOCK, process may perform fcntl locking operations on file
+        - executeMap    # AA_EXEC_MMAP, process may execute code from a page memory-mapped from a file
+        - link          # AA_MAY_LINK, process may create hard link
+        - changeProfileOnExec # AA_MAY_ONEXEC, process may change the apparmor profile on the next exec call
+        - changeProfile # AA_MAY_CHANGE_PROFILE, process may change the apparmor profile on demand
+    allow:
+      description: >
+        Decision to allow or deny access to the given resource.
+      type: boolean
+    duration:
+      description: >
+        The duration for which the response decision should be valid.
+      type: string
+      enum:
+        - single
+        - session
+        - always
+        - timeframe # TODO: how to store the timeframe?
+    permissions:
+      description: >
+        The list of permissions for which a decision applies.
+      type: array
+      items:
+        $ref: "#/components/schemas/permission"
+    path-access:
+      description: >
+        Apply the same decision on either the path itself, all other files in
+        the directory of the requested path, or all other files in the path's
+        directory and all subdirectories.
+
+        The subdirectories value is a superset of the the directory value.
+
+        If the requested path is a file, then directory access refers to
+        accessing files in the parent directory of the path.
+
+        If the requested path is a directory, then directory access refers to
+        accessing files in that directory.
+      type: string
+      enum:
+        - file
+        - directory
+        - subdirectories
+    request:
+      description: >
+        A request to access a particular resource.
+      type: object
+      required:
+        - id
+        - name
+        - path
+        - resource-type
+        - permission
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+        name:
+          $ref: "#/components/schemas/name"
+        path:
+          $ref: "#/components/schemas/path"
+        resource-type:
+          $ref: "#/components/schemas/resource-type"
+        permission:
+          $ref: "#/components/schemas/permission"
+    response:
+      description: >
+        A response to a resource access request.
+      type: object
+      required:
+        - allow
+        - duration
+      properties:
+        allow:
+          $ref: "#/components/schemas/allow"
+        duration:
+          $ref: "#/components/schemas/duration"
+        permissions:
+          $ref: "#/components/schemas/permissions"
+        path-access:
+          $ref: "#/components/schemas/path-access"
+      # store-parent:
+      #   description: >
+      #     Store the parent of the requested path in the database,
+      #     rather than the path itself.
+      #   type: boolean
+    decision-contents:
+      description: >
+        A resource access request decision.
+      type: object
+      required:
+        - name
+        - path
+        - resource-type
+        - allow
+        - duration
+        - permissions
+      properties:
+        name:
+          $ref: "#/components/schemas/name"
+        path:
+          $ref: "#/components/schemas/path"
+        resource-type:
+          $ref: "#/components/schemas/resource-type"
+        allow:
+          $ref: "#/components/schemas/allow"
+        duration:
+          $ref: "#/components/schemas/duration"
+        permissions:
+          $ref: "#/components/schemas/permissions"
+        path-access:
+          $ref: "#/components/schemas/path-access"
+    decision:
+      description: >
+        A saved resource access request decision with a corresponding ID and
+        timestamp.
+      allOf:
+        - $ref: "#/components/schemas/id"
+        - $ref: "#/components/schemas/timestamp"
+        - $ref: "#/components/schemas/decision-contents"
+    stored-decisions:
+      description: >
+        A list of resource access request decisions.
+      type: array
+      items:
+        $ref: "#/components/schemas/decision"
+    changed-decisions:
+      description: >
+        The resource access request decisions which have been created,
+        modified, or deleted as a result of a change.
+      type: object
+      properties:
+        new:
+          description: >
+            The resource access request decisions which have been created.
+          type: array
+          items:
+            $ref: "#/components/schemas/decision"
+        modified:
+          description: >
+            The resource access request decisions which have been modified.
+          type: array
+          items:
+            $ref: "#/components/schemas/decision"
+        deleted:
+          description: >
+            The resource access request decisions which have been deleted.
+          type: array
+          items:
+            $ref: "#/components/schemas/decision"
+  parameters:
+    id-param:
+      description: >
+        The ID of the resource access request.
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/id"
+    socket-param:
+      description: >
+        The path of the socket on which the client will listen for prompt
+        requests from snapd.
+      name: socket-path
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/socket-path"
+    response-param:
+      description: >
+        A response to the given resource access request.
+      name: response
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/response"
+    decision-param:
+      description: >
+        The contents of the resource access request decision.
+      name: decision
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/decision-contents"
+    changed-decisions-param:
+      description: >
+        The resource access request decisions which have changed.
+      name: changed-decisions
+      in: query
+      required: true
+      schema:
+        $ref: "$/components/schemas/changed-decisions"
+paths:
+  /v2/prompting/register:
+    POST:
+      summary: Register a prompt UI client with snapd
+      description: >
+        Register a prompt UI client to accept prompt requests from snapd.
+      parameters:
+        - $ref: "#/components/parameters/socket-param"
+        # TODO: is it necessary to tell snapd the UID of the user for which
+        # the prompt client is being registered, or can snapd deduce this from
+        # the request itself?
+      responses:
+        "200":
+          description: >
+            Successfully registered the prompt UI client with snapd to listen
+            on the given socket path.
+        "404":
+          description: >
+            Failed to register the prompt UI client with snapd.
+  /v2/prompting/requests:
+    GET:
+      summary: Retrieve all resource access requests
+      description: >
+        Retrieve all outstanding resource access requests.
+      responses:
+        "200":
+          description: >
+            Successfully retrieved all pending resource access requests.
+          content:
+            application/json:
+              schema:
+                description: >
+                  The resource access requests which are currently pending.
+                type: array
+                items:
+                  $ref: "#/components/schemas/request"
+        "404":
+          description: >
+            Failed to retrieve resource access requests.
+  /v2/prompting/requests/{id}:
+    GET:
+      summary: Retrieve the request information for a particular request ID
+      description: >
+        Retrieve the resource access request information corresponding to the
+        given ID.
+      parameters:
+        - $ref: "#/components/parameters/id-param"
+      responses:
+        "200":
+          description: >
+            Successfully retrieved the request information for the resource
+            access request with the given ID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/request"
+        "404":
+          description: >
+            No resource access request found with the given ID.
+    POST:
+      summary: Respond to the given resource access request
+      description: >
+        Respond to the given resource access request, providing information
+        collected by prompting the user for a decision about access to the
+        corresponding resource.
+      parameters:
+        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/response-param"
+      responses:
+        "200":
+          description: >
+            Successfully received the response for the request with the given ID.
+        "404":
+          description: >
+            No request found with the given ID, ignoring response.
+  /v2/prompting/decisions:
+    GET:
+      summary: Get existing resource access request decisions
+      description: >
+        Retrieve all existing resource access request decisions from the
+        decision database.
+      responses:
+        "200":
+          description: >
+            Successfully retrieved existing resource access request decisions
+            from the decision database.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/stored-decisions"
+        "404":
+          description: >
+            Failed to retrieve existing resource access request decisions from
+            the decision database.
+    POST:
+      summary: Create a new resource access request decision
+      description: >
+        Directly create a new resource access request rule without having
+        previously been prompted by a resource access request.
+      parameters:
+        - $ref: "#/components/parameters/decision-param"
+      responses:
+        "200":
+          description: >
+            Successfully added the given resource access request decision.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/changed-decisions"
+        "404":
+          description: >
+            Failed to create the given resource access request decision.
+  /v2/prompting/decisions/{name}:
+    GET:
+      summary: Get stored decisions for an application
+      description: >
+        Get all resource access request decisions for the given application.
+      parameters:
+        - description: >
+            The name of the application for which to get resource access
+            request decisions.
+          name: name
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/name"
+      responses:
+        "200":
+          description: >
+            Successfully retrieved the resource access request decisions for
+            the given application name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/stored-decisions"
+        "404":
+          description: >
+            Failed to retrieve the resource access request decisions for the
+            given application name.
+  /v2/prompting/decisions/{id}:
+    GET:
+      summary: Get a particular resource access request decision
+      description: >
+        Get the resource access request decision corresponding to the given
+        request ID.
+      parameters:
+        - $ref: "#/components/parameters/id-param"
+      responses:
+        "200":
+          description: >
+            Successfully retrieved the resource access request decision with
+            the given ID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/decision"
+        "404":
+          description: >
+            No resource access request decision found with the given ID.
+    POST:
+      summary: Modify an existing resource access request decision
+      description: >
+        Modify the resource access request response corresponding to the given
+        request ID.
+      parameters:
+        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/response-param"
+      responses:
+        "200":
+          description: >
+            Successfully modified the resource access request decision with
+            the given ID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/changed-decisions"
+        "404":
+          description: >
+            No resource access request decision found with the given ID.
+            Ignore the given response information.
+  /v2/prompting/decisions/{id}/delete:
+    POST:
+      summary: Delete a resource access request decision.
+      description: >
+        Delete the resource access request decision with the given ID.
+      parameters:
+        - $ref: "#/components/parameters/id-param"
+      responses:
+        "200":
+          description: >
+            Successfully deleted the resource access request decision with the
+            given ID.  It can be found in the response content.
+          content:
+            applications/json:
+              schema:
+                $ref: "#/components/schemas/decision"
+        "404":
+          description: >
+            No resource access request decision found with the given ID.
+  /v2/prompting/decisions/clear:
+    POST:
+      summary: Delete all decisions
+      description: >
+        Delete all previously-stored resource access request decisions from
+        the decision database.
+      responses:
+        "200":
+          description: >
+            Successfully deleted all resource access request decisions.
+            All deleted decisions can be found in the response content.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/stored-decisions"
+        "404":
+          description: >
+            Failed to delete resource access request decisions from the
+            decision database.
+                        
+
+  # API paths provided by the prompt UI client
+  /client/request:
+    POST:
+      summary: Notify prompt UI client of a new request
+      description: >
+        Tell the prompt UI client that there is a new resource access request
+        for which snapd is awaiting a response.
+      parameters:
+        - name: id
+          description: >
+            The ID of the resource access request.
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/id"
+      responses:
+        "200":
+          description: >
+            The prompt UI client successfully received the resource access
+            request ID.
+            First, it will query the snapd request socket for more information
+            about the request, then it will prompt the user for a decision, and
+            lastly provide the response back to snapd by posting to the snapd
+            request socket.
+        "404":
+          description: >
+            The prompt UI client did not receive the resource access request.
+  /client/changes:
+    POST:
+      summary: Notify prompt UI client that decisions have changed
+      description: >
+        Notify the prompt UI client with information about resource access
+        requests whose decisions have changed.
+      parameters:
+        - $ref: "#/components/parameters/changed-decision-param"
+      responses:
+        "200":
+          description: >
+            The client successfully received the changes to the resource access
+            request decisions.
+        "404":
+          description: >
+            The client failed to receive the changes to the resource access
+            request decisions.
+
+
+# Old idea:
+# - Prompt UI client listens on a request socket for GET requests from snapd
+# - When it receives a request, it prompts the user, then responds to the
+#     request with the user's decision
+#
+# /client/request: # client listens on this socket for requests from snapd
+#   GET:
+#     summary: Request access to a resource via the prompt UI client
+#     description: 
+#     parameters:
+#       - name: id
+#         in: query
+#         required: true
+#         schema:
+#           $ref: "#/components/schemas/id"
+#       - name: snap-label
+#         in: query
+#         required: true
+#         allowReserved: true
+#         schema:
+#           $ref: "#/components/schemas/path"
+#       - name: resource-type
+#         in: query
+#         required: true
+#         schema:
+#           $ref: "#/components/schemas/resource-type"
+#       - name: permission
+#         in: query
+#         required: true
+#         schema:
+#           $ref: "#/components/schemas/permission"
+#     responses:
+#       "200":
+#         description: >
+#           Successfully prompted for access and received response.
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               properties:
+#                 id:
+#                   $ref: "#/components/schemas/id"
+#                 allow:
+#                   $ref: "#/components/schemas/allow"
+#                 duration:
+#                   $ref: "#/components/schemas/duration"
+#                 permissions:
+#                   $ref: "#/components/schemas/permissions"
+#                 path-access:
+#                   $ref: "#/components/schemas/path-access"
+#               # store-parent:
+#               #   type: boolean
+#               #   description: >
+#               #     Store the parent of the requested path in the database,
+#               #     rather than the path itself.
+#       "404":
+#         description: "No response"
