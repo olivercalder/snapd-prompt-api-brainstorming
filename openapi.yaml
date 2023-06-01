@@ -7,6 +7,10 @@ info:
     The API for communication between snapd and prompt UI clients.
 components:
   schemas:
+    follow:
+      description: >
+        Whether of not to open a long-lived connection.
+      type: boolean
     id:
       description: >
         The unique ID of a request.
@@ -215,6 +219,14 @@ components:
           items:
             $ref: "#/components/schemas/decision"
   parameters:
+    follow-param:
+      description: >
+        Open a long-lived connection to be notified of future requests.
+      name: follow
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/follow"
     id-param:
       description: >
         The ID of the resource access request.
@@ -257,29 +269,13 @@ components:
       schema:
         $ref: "$/components/schemas/changed-decisions"
 paths:
-  /v2/prompting/register:
-    POST:
-      summary: Register a prompt UI client with snapd
-      description: >
-        Register a prompt UI client to accept prompt requests from snapd.
-      parameters:
-        - $ref: "#/components/parameters/socket-param"
-        # TODO: is it necessary to tell snapd the UID of the user for which
-        # the prompt client is being registered, or can snapd deduce this from
-        # the request itself?
-      responses:
-        "200":
-          description: >
-            Successfully registered the prompt UI client with snapd to listen
-            on the given socket path.
-        "404":
-          description: >
-            Failed to register the prompt UI client with snapd.
   /v2/prompting/requests:
     GET:
       summary: Retrieve all resource access requests
       description: >
         Retrieve all outstanding resource access requests.
+      parameters:
+        - $ref: "#/components/parameters/follow-param"
       responses:
         "200":
           description: >
@@ -337,6 +333,8 @@ paths:
       description: >
         Retrieve all existing resource access request decisions from the
         decision database.
+      parameters:
+        - $ref: "#/components/parameters/follow-param"
       responses:
         "200":
           description: >
@@ -382,6 +380,7 @@ paths:
           required: true
           schema:
             $ref: "#/components/schemas/name"
+        - $ref: "#/components/parameters/follow-param"
       responses:
         "200":
           description: >
@@ -474,52 +473,6 @@ paths:
           description: >
             Failed to delete resource access request decisions from the
             decision database.
-
-
-  # API paths provided by the prompt UI client
-  /client/request:
-    POST:
-      summary: Notify prompt UI client of a new request
-      description: >
-        Tell the prompt UI client that there is a new resource access request
-        for which snapd is awaiting a response.
-      parameters:
-        - name: id
-          description: >
-            The ID of the resource access request.
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/id"
-      responses:
-        "200":
-          description: >
-            The prompt UI client successfully received the resource access
-            request ID.
-            First, it will query the snapd request socket for more information
-            about the request, then it will prompt the user for a decision, and
-            lastly provide the response back to snapd by posting to the snapd
-            request socket.
-        "404":
-          description: >
-            The prompt UI client did not receive the resource access request.
-  /client/changes:
-    POST:
-      summary: Notify prompt UI client that decisions have changed
-      description: >
-        Notify the prompt UI client with information about resource access
-        requests whose decisions have changed.
-      parameters:
-        - $ref: "#/components/parameters/changed-decision-param"
-      responses:
-        "200":
-          description: >
-            The client successfully received the changes to the resource access
-            request decisions.
-        "404":
-          description: >
-            The client failed to receive the changes to the resource access
-            request decisions.
 
 
 # Old idea:
