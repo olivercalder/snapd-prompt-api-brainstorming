@@ -10,7 +10,7 @@ components:
     id:
       description: >
         The unique ID of a request.
-      type: integer
+      type: string
     timestamp:
       description: >
         The timestamp at which a request was created or last modified.
