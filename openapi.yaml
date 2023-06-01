@@ -10,15 +10,19 @@ components:
     id:
       description: >
         The unique ID of a request.
-      type: integer
+      type: string
     timestamp:
       description: >
         The timestamp at which a request was created or last modified.
       type: string
       format: date-time
-    name:
+    snap:
       description: >
-        The name of the application which triggered the access request.
+        The name of the snap which triggered the access request.
+      type: string
+    app:
+      description: >
+        The name of the app which triggered the access request.
       type: string
     path:
       description: >
@@ -45,26 +49,26 @@ components:
         The type of operation for which to apply a decision about access to a resource.
       type: string
       enum:
-        - execute       # AA_MAY_EXEC, process may execute another program
-        - write         # AA_MAY_WRITE, process may write to a file or socket
-        - read          # AA_MAY_READ, process may read from a file or socket, or enumerate directory contents
-        - append        # AA_MAY_APPEND, process may open a file in append mode
-        - create        # AA_MAY_CREATE, process may create a new file
-        - delete        # AA_MAY_DELETE, process may delete a file, directory, symbolic link, or socket
-        - open          # AA_MAY_OPEN, process may open a file or directory, the additional presence of write or read grants specific type of access
-        - rename        # AA_MAY_RENAME, process may rename a file
-        - setAttribute  # AA_MAY_SETATTR, not checked by the kernel
-        - getAttribute  # AA_MAY_GETATTR, not checked by the kernel
-        - setCredential # AA_MAY_SETCRED, not used in the kernel
-        - getCredential # AA_MAY_GETCRED, not used in the kernel
-        - changeMode    # AA_MAY_CHMOD, process may change UNIX file permissions
-        - changeOwner   # AA_MAY_CHOWN, process may change file ownership
-        - changeGroup   # AA_MAY_CHGRP, process may change the group ownership of a file
-        - lock          # AA_MAY_LOCK, process may perform fcntl locking operations on file
-        - executeMap    # AA_EXEC_MMAP, process may execute code from a page memory-mapped from a file
-        - link          # AA_MAY_LINK, process may create hard link
-        - changeProfileOnExec # AA_MAY_ONEXEC, process may change the apparmor profile on the next exec call
-        - changeProfile # AA_MAY_CHANGE_PROFILE, process may change the apparmor profile on demand
+        - execute                # AA_MAY_EXEC, process may execute another program
+        - write                  # AA_MAY_WRITE, process may write to a file or socket
+        - read                   # AA_MAY_READ, process may read from a file or socket, or enumerate directory contents
+        - append                 # AA_MAY_APPEND, process may open a file in append mode
+        - create                 # AA_MAY_CREATE, process may create a new file
+        - delete                 # AA_MAY_DELETE, process may delete a file, directory, symbolic link, or socket
+        - open                   # AA_MAY_OPEN, process may open a file or directory, the additional presence of write or read grants specific type of access
+        - rename                 # AA_MAY_RENAME, process may rename a file
+        - set-attribute          # AA_MAY_SETATTR, not checked by the kernel
+        - get-attribute          # AA_MAY_GETATTR, not checked by the kernel
+        - set-credential         # AA_MAY_SETCRED, not used in the kernel
+        - get-credential         # AA_MAY_GETCRED, not used in the kernel
+        - change-mode            # AA_MAY_CHMOD, process may change UNIX file permissions
+        - change-owner           # AA_MAY_CHOWN, process may change file ownership
+        - change-group           # AA_MAY_CHGRP, process may change the group ownership of a file
+        - lock                   # AA_MAY_LOCK, process may perform fcntl locking operations on file
+        - execute-map            # AA_EXEC_MMAP, process may execute code from a page memory-mapped from a file
+        - link                   # AA_MAY_LINK, process may create hard link
+        - change-profile-on-exec # AA_MAY_ONEXEC, process may change the apparmor profile on the next exec call
+        - change-profile         # AA_MAY_CHANGE_PROFILE, process may change the apparmor profile on demand
     allow:
       description: >
         Decision to allow or deny access to the given resource.
