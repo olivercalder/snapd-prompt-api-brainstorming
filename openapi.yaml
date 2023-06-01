@@ -31,7 +31,9 @@ components:
     socket-path:
       description: >
         The path of the socket on which the UI client will listen for messages
-        from snapd.  When the 
+        from snapd.  To trigger a new prompt, snapd sends a request to this
+        socket to tell the client to query the snapd request endpoint to get
+        information about the new request.
       type: string
     resource-type:
       description: >
@@ -472,7 +474,7 @@ paths:
           description: >
             Failed to delete resource access request decisions from the
             decision database.
-                        
+
 
   # API paths provided by the prompt UI client
   /client/request:
@@ -528,7 +530,7 @@ paths:
 # /client/request: # client listens on this socket for requests from snapd
 #   GET:
 #     summary: Request access to a resource via the prompt UI client
-#     description: 
+#     description:
 #     parameters:
 #       - name: id
 #         in: query
