@@ -16,9 +16,13 @@ components:
         The timestamp at which a request was created or last modified.
       type: string
       format: date-time
-    name:
+    snap:
       description: >
-        The name of the application which triggered the access request.
+        The name of the snap which triggered the access request.
+      type: string
+    app:
+      description: >
+        The name of the app which triggered the access request.
       type: string
     path:
       description: >
