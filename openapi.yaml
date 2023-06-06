@@ -114,15 +114,18 @@ components:
       type: object
       required:
         - id
-        - name
+        - snap
+        - app
         - path
         - resource-type
         - permission
       properties:
         id:
           $ref: "#/components/schemas/id"
-        name:
-          $ref: "#/components/schemas/name"
+        snap:
+          $ref: "#/components/schemas/snap"
+        app:
+          $ref: "#/components/schemas/app"
         path:
           $ref: "#/components/schemas/path"
         resource-type:
@@ -155,15 +158,18 @@ components:
         A resource access request decision.
       type: object
       required:
-        - name
+        - snap
+        - app
         - path
         - resource-type
         - allow
         - duration
         - permissions
       properties:
-        name:
-          $ref: "#/components/schemas/name"
+        snap:
+          $ref: "#/components/schemas/snap"
+        app:
+          $ref: "#/components/schemas/app"
         path:
           $ref: "#/components/schemas/path"
         resource-type:
@@ -381,7 +387,9 @@ paths:
           in: path
           required: true
           schema:
-            $ref: "#/components/schemas/name"
+            description: >
+              The name of the application which triggered the access request.
+            type: string
       responses:
         "200":
           description: >
