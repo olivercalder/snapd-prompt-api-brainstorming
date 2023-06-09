@@ -384,6 +384,24 @@ paths:
         "404":
           description: >
             Failed to create the given resource access request decision.
+    DELETE:
+      summary: Delete all decisions
+      description: >
+        Delete all previously-stored resource access request decisions from
+        the decision database.
+      responses:
+        "200":
+          description: >
+            Successfully deleted all resource access request decisions.
+            All deleted decisions can be found in the response content.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/stored-decisions"
+        "404":
+          description: >
+            Failed to delete resource access request decisions from the
+            decision database.
   /v2/prompting/decisions/{snap}:
     GET:
       summary: Get stored decisions for a snap
@@ -406,8 +424,7 @@ paths:
           description: >
             Failed to retrieve the resource access request decisions for the
             given snap.
-  /v2/prompting/decisions/{snap}/clear:
-    POST:
+    DELETE:
       summary: Delete stored decisions for a snap
       description: >
         Delete all previously-stored resource access request decisions for all
@@ -450,8 +467,7 @@ paths:
           description: >
             Failed to retrieve the resource access request decisions for the
             given app within the given snap.
-  /v2/prompting/decisions/{snap}/{app}/clear:
-    POST:
+    DELETE:
       summary: Delete stored decisions for an app
       description: >
         Delete all previously-stored resource access request decisions for the
@@ -514,8 +530,7 @@ paths:
           description: >
             No resource access request decision found with the given ID.
             Ignore the given response information.
-  /v2/prompting/decisions/{id}/delete:
-    POST:
+    DELETE:
       summary: Delete a resource access request decision.
       description: >
         Delete the resource access request decision with the given ID.
@@ -533,23 +548,4 @@ paths:
         "404":
           description: >
             No resource access request decision found with the given ID.
-  /v2/prompting/decisions/clear:
-    POST:
-      summary: Delete all decisions
-      description: >
-        Delete all previously-stored resource access request decisions from
-        the decision database.
-      responses:
-        "200":
-          description: >
-            Successfully deleted all resource access request decisions.
-            All deleted decisions can be found in the response content.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/stored-decisions"
-        "404":
-          description: >
-            Failed to delete resource access request decisions from the
-            decision database.
 
