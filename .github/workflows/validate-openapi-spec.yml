@@ -2,7 +2,7 @@ name: validate-openapi-spec
 run-name: New push or PR from ${{ github.actor }}
 on: [push, pull_request]
 jobs:
-  validate-openapi.yaml:
+  validate-openapi-yaml:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
