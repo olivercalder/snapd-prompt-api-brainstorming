@@ -1,0 +1,14 @@
+name: validate-openapi-spec
+run-name: New push or PR from ${{ github.actor }}
+on: [push, pull_request]
+jobs:
+  validate-openapi.yaml:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - run: pip install openapi-spec-validator
+      - run: cat openapi.yaml | sed 's/GET/get/g' | sed 's/POST/post/g' | sed 's/PUT/put/g' | sed 's/DELETE/delete/g' | sed 's/PATCH/patch/g' | openapi-spec-validator -
