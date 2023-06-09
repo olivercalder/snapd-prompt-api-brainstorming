@@ -7,6 +7,10 @@ info:
     The API for communication between snapd and prompt UI clients.
 components:
   schemas:
+    follow:
+      description: >
+        Whether or not to open a long-lived connection.
+      type: boolean
     id:
       description: >
         The unique ID of a request.
@@ -27,13 +31,6 @@ components:
     path:
       description: >
         The path of the resource being requested.
-      type: string
-    socket-path:
-      description: >
-        The path of the socket on which the UI client will listen for messages
-        from snapd.  To trigger a new prompt, snapd sends a request to this
-        socket to tell the client to query the snapd request endpoint to get
-        information about the new request.
       type: string
     resource-type:
       description: >
@@ -221,6 +218,14 @@ components:
           items:
             $ref: "#/components/schemas/decision"
   parameters:
+    follow-param:
+      description: >
+        Open a long-lived connection to be notified of future requests.
+      name: follow
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/follow"
     snap-param:
       description: >
         The name of the snap for which to get resource access request
@@ -246,15 +251,6 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/id"
-    socket-param:
-      description: >
-        The path of the socket on which the client will listen for prompt
-        requests from snapd.
-      name: socket-path
-      in: query
-      required: true
-      schema:
-        $ref: "#/components/schemas/socket-path"
     response-param:
       description: >
         A response to the given resource access request.
@@ -280,29 +276,13 @@ components:
       schema:
         $ref: "$/components/schemas/changed-decisions"
 paths:
-  /v2/prompting/register:
-    POST:
-      summary: Register a prompt UI client with snapd
-      description: >
-        Register a prompt UI client to accept prompt requests from snapd.
-      parameters:
-        - $ref: "#/components/parameters/socket-param"
-        # TODO: is it necessary to tell snapd the UID of the user for which
-        # the prompt client is being registered, or can snapd deduce this from
-        # the request itself?
-      responses:
-        "200":
-          description: >
-            Successfully registered the prompt UI client with snapd to listen
-            on the given socket path.
-        "404":
-          description: >
-            Failed to register the prompt UI client with snapd.
   /v2/prompting/requests:
     GET:
       summary: Retrieve all resource access requests
       description: >
         Retrieve all outstanding resource access requests.
+      parameters:
+        - $ref: "#/components/parameters/follow-param"
       responses:
         "200":
           description: >
@@ -360,6 +340,8 @@ paths:
       description: >
         Retrieve all existing resource access request decisions from the
         decision database.
+      parameters:
+        - $ref: "#/components/parameters/follow-param"
       responses:
         "200":
           description: >
@@ -399,6 +381,7 @@ paths:
         given snap.
       parameters:
         - $ref: "#/components/parameters/snap-param"
+        - $ref: "#/components/parameters/follow-param"
       responses:
         "200":
           description: >
@@ -559,107 +542,3 @@ paths:
             Failed to delete resource access request decisions from the
             decision database.
 
-
-  # API paths provided by the prompt UI client
-  /client/request:
-    POST:
-      summary: Notify prompt UI client of a new request
-      description: >
-        Tell the prompt UI client that there is a new resource access request
-        for which snapd is awaiting a response.
-      parameters:
-        - name: id
-          description: >
-            The ID of the resource access request.
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/id"
-      responses:
-        "200":
-          description: >
-            The prompt UI client successfully received the resource access
-            request ID.
-            First, it will query the snapd request socket for more information
-            about the request, then it will prompt the user for a decision, and
-            lastly provide the response back to snapd by posting to the snapd
-            request socket.
-        "404":
-          description: >
-            The prompt UI client did not receive the resource access request.
-  /client/changes:
-    POST:
-      summary: Notify prompt UI client that decisions have changed
-      description: >
-        Notify the prompt UI client with information about resource access
-        requests whose decisions have changed.
-      parameters:
-        - $ref: "#/components/parameters/changed-decision-param"
-      responses:
-        "200":
-          description: >
-            The client successfully received the changes to the resource access
-            request decisions.
-        "404":
-          description: >
-            The client failed to receive the changes to the resource access
-            request decisions.
-
-
-# Old idea:
-# - Prompt UI client listens on a request socket for GET requests from snapd
-# - When it receives a request, it prompts the user, then responds to the
-#     request with the user's decision
-#
-# /client/request: # client listens on this socket for requests from snapd
-#   GET:
-#     summary: Request access to a resource via the prompt UI client
-#     description:
-#     parameters:
-#       - name: id
-#         in: query
-#         required: true
-#         schema:
-#           $ref: "#/components/schemas/id"
-#       - name: snap-label
-#         in: query
-#         required: true
-#         allowReserved: true
-#         schema:
-#           $ref: "#/components/schemas/path"
-#       - name: resource-type
-#         in: query
-#         required: true
-#         schema:
-#           $ref: "#/components/schemas/resource-type"
-#       - name: permission
-#         in: query
-#         required: true
-#         schema:
-#           $ref: "#/components/schemas/permission"
-#     responses:
-#       "200":
-#         description: >
-#           Successfully prompted for access and received response.
-#         content:
-#           application/json:
-#             schema:
-#               type: object
-#               properties:
-#                 id:
-#                   $ref: "#/components/schemas/id"
-#                 allow:
-#                   $ref: "#/components/schemas/allow"
-#                 duration:
-#                   $ref: "#/components/schemas/duration"
-#                 permissions:
-#                   $ref: "#/components/schemas/permissions"
-#                 path-access:
-#                   $ref: "#/components/schemas/path-access"
-#               # store-parent:
-#               #   type: boolean
-#               #   description: >
-#               #     Store the parent of the requested path in the database,
-#               #     rather than the path itself.
-#       "404":
-#         description: "No response"
