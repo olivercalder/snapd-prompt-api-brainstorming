@@ -150,6 +150,18 @@ components:
       #     Store the parent of the requested path in the database,
       #     rather than the path itself.
       #   type: boolean
+    decision-metadata:
+      description: >
+        The internal metadata for a resource access request decision.
+      type: object
+      required:
+        - id
+        - timestamp
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+        timestamp:
+          $ref: "#/components/schemas/timestamp"
     decision-contents:
       description: >
         A resource access request decision.
@@ -184,8 +196,7 @@ components:
         A saved resource access request decision with a corresponding ID and
         timestamp.
       allOf:
-        - $ref: "#/components/schemas/id"
-        - $ref: "#/components/schemas/timestamp"
+        - $ref: "#/components/schemas/decision-metadata"
         - $ref: "#/components/schemas/decision-contents"
     stored-decisions:
       description: >
