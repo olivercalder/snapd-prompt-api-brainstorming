@@ -1,4 +1,6 @@
 openapi: 3.1.0
+servers:
+  - url: http://localhost
 info:
   title: Prompting API
   summary: The API for communication between snapd and prompt UI clients
