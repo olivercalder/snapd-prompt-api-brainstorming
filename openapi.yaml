@@ -283,6 +283,7 @@ components:
 paths:
   /v2/prompting/requests:
     GET:
+      operationId: getRequests
       summary: Retrieve all resource access requests
       description: >
         Retrieve all outstanding resource access requests.
@@ -305,6 +306,7 @@ paths:
             Failed to retrieve resource access requests.
   /v2/prompting/requests/{id}:
     GET:
+      operationId: getRequestWithId
       summary: Retrieve the request information for a particular request ID
       description: >
         Retrieve the resource access request information corresponding to the
@@ -324,6 +326,7 @@ paths:
           description: >
             No resource access request found with the given ID.
     POST:
+      operationId: respondToRequestWithId
       summary: Respond to the given resource access request
       description: >
         Respond to the given resource access request, providing information
@@ -341,6 +344,7 @@ paths:
             No request found with the given ID, ignoring response.
   /v2/prompting/decisions:
     GET:
+      operationId: getDecisions
       summary: Get existing resource access request decisions
       description: >
         Retrieve all existing resource access request decisions from the
@@ -361,6 +365,7 @@ paths:
             Failed to retrieve existing resource access request decisions from
             the decision database.
     POST:
+      operationId: addDecision
       summary: Create a new resource access request decision
       description: >
         Directly create a new resource access request rule without having
@@ -379,6 +384,7 @@ paths:
           description: >
             Failed to create the given resource access request decision.
     DELETE:
+      operationId: deleteDecisions
       summary: Delete all decisions
       description: >
         Delete all previously-stored resource access request decisions from
@@ -398,6 +404,7 @@ paths:
             decision database.
   /v2/prompting/decisions/{snap}:
     GET:
+      operationId: getDecisionsForSnap
       summary: Get stored decisions for a snap
       description: >
         Get all resource access request decisions for all apps within the
@@ -419,6 +426,7 @@ paths:
             Failed to retrieve the resource access request decisions for the
             given snap.
     DELETE:
+      operationId: deleteDecisionsForSnap
       summary: Delete stored decisions for a snap
       description: >
         Delete all previously-stored resource access request decisions for all
@@ -441,6 +449,7 @@ paths:
             snap from the decision database.
   /v2/prompting/decisions/{snap}/{app}:
     GET:
+      operationId: getDecisionsForSnapApp
       summary: Get stored decisions for an app
       description: >
         Get all resource access request decisions for the given app within the
@@ -462,6 +471,7 @@ paths:
             Failed to retrieve the resource access request decisions for the
             given app within the given snap.
     DELETE:
+      operationId: deleteDecisionsForSnapApp
       summary: Delete stored decisions for an app
       description: >
         Delete all previously-stored resource access request decisions for the
@@ -485,6 +495,7 @@ paths:
             app within the given snap from the decision database.
   /v2/prompting/decisions/{id}:
     GET:
+      operationId: getDecisionWithId
       summary: Get a particular resource access request decision
       description: >
         Get the resource access request decision corresponding to the given
@@ -504,6 +515,7 @@ paths:
           description: >
             No resource access request decision found with the given ID.
     POST:
+      operationId: modifyDecisionWithId
       summary: Modify an existing resource access request decision
       description: >
         Modify the resource access request response corresponding to the given
@@ -525,6 +537,7 @@ paths:
             No resource access request decision found with the given ID.
             Ignore the given response information.
     DELETE:
+      operationId: deleteDecisionWithId
       summary: Delete a resource access request decision.
       description: >
         Delete the resource access request decision with the given ID.
