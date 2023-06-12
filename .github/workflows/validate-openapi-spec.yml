@@ -13,8 +13,8 @@ jobs:
           python-version: '3.10'
       - name: Install openapi-spec-validator
         run: pip install openapi-spec-validator
-      - name: Install vacuum linter
-        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh
+      - name: Install vacuum linter to /tmp/bin
+        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | INSTALL_DIR="/tmp" sh
       - name: Create cleaned API with lowercase HTTP verbs
         run: |
           cat openapi.yaml \
@@ -26,4 +26,4 @@ jobs:
       - name: Validate API
         run: openapi-spec-validator openapi_cleaned.yaml
       - name: Lint API
-        run: vacuum lint openapi_cleaned.yaml
+        run: /tmp/bin/vacuum lint openapi_cleaned.yaml
