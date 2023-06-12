@@ -280,14 +280,6 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/decision-contents"
-    changed-decisions-param:
-      description: >
-        The resource access request decisions which have changed.
-      name: changed-decisions
-      in: query
-      required: true
-      schema:
-        $ref: "$/components/schemas/changed-decisions"
 paths:
   /v2/prompting/requests:
     GET:
