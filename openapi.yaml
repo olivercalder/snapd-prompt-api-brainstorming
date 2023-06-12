@@ -586,4 +586,5 @@ paths:
         "404":
           description: >
             No resource access request decision found with the given ID.
+            Failed to delete decision.
 
