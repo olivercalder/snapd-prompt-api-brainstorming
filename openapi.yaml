@@ -518,7 +518,7 @@ paths:
           description: >
             Failed to delete resource access request decisions for the given
             app within the given snap from the decision database.
-  /v2/prompting/decisions/{id}:
+  /v2/prompting/decision-id/{id}:
     GET:
       operationId: getDecisionWithId
       summary: Get a particular resource access request decision
