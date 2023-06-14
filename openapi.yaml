@@ -419,7 +419,7 @@ paths:
           description: >
             Failed to delete resource access request decisions from the
             decision database.
-  /v2/prompting/decisions/{snap}:
+  /v2/prompting/decisions/snap/{snap}:
     GET:
       operationId: getDecisionsForSnap
       summary: Get stored decisions for a snap
@@ -468,7 +468,7 @@ paths:
           description: >
             Failed to delete resource access request decisions for the given
             snap from the decision database.
-  /v2/prompting/decisions/{snap}/{app}:
+  /v2/prompting/decisions/snap/{snap}/{app}:
     GET:
       operationId: getDecisionsForSnapApp
       summary: Get stored decisions for an app
@@ -518,7 +518,7 @@ paths:
           description: >
             Failed to delete resource access request decisions for the given
             app within the given snap from the decision database.
-  /v2/prompting/decision-id/{id}:
+  /v2/prompting/decisions/id/{id}:
     GET:
       operationId: getDecisionWithId
       summary: Get a particular resource access request decision
