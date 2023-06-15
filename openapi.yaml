@@ -350,6 +350,10 @@ paths:
         "200":
           description: >
             Successfully received the response for the request with the given ID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/changed-decisions"
         "404":
           description: >
             No request found with the given ID, ignoring response.
