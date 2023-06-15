@@ -25,10 +25,10 @@ The API has two primary goals:
 
 ## Endpoints
 
-- [`/v2/prompting/requests`](#v2-prompting-requests)
-- [`/v2/prompting/requests/{id}`](#v2-prompting-requests-id)
-- [`/v2/prompting/decisions`](#v2-prompting-decisions)
-- [`/v2/prompting/decisions/{id}`](#v2-prompting-decisions-id)
+- [`/v2/prompting/requests`](#v2promptingrequests)
+- [`/v2/prompting/requests/{id}`](#v2promptingrequestsid)
+- [`/v2/prompting/decisions`](#v2promptingdecisions)
+- [`/v2/prompting/decisions/{id}`](#v2promptingdecisionsid)
 
 ### `/v2/prompting/requests`
 
