@@ -244,16 +244,16 @@ components:
         The name of the snap for which to get resource access request
         decisions.
       name: snap
-      in: path
-      required: true
+      in: query
+      required: false
       schema:
         $ref: "#/components/schemas/snap"
     app-param:
       description: >
         The name of the app for which to get resource access request decisions.
       name: app
-      in: path
-      required: true
+      in: query
+      required: false
       schema:
         $ref: "#/components/schemas/app"
     id-param:
@@ -358,12 +358,19 @@ paths:
       operationId: getDecisions
       summary: Get existing resource access request decisions
       description: >
-        Retrieve all existing resource access request decisions from the
-        decision database.
+        Retrieve existing resource access request decisions from the decision
+        database.
+        If the snap parameter is given, only retrieve resource access requests
+        for that snap.
+        If the app parameter is given along with the snap parameter, only
+        retrieve resource access requests for that app within the given snap.
+        The app parameter is ignored if the snap parameter is not given.
       tags:
         - decisions
       parameters:
         - $ref: "#/components/parameters/follow-param"
+        - $ref: "#/components/parameters/snap-param"
+        - $ref: "#/components/parameters/app-param"
       responses:
         "200":
           description: >
@@ -400,16 +407,24 @@ paths:
             Failed to create the given resource access request decision.
     DELETE:
       operationId: deleteDecisions
-      summary: Delete all decisions
+      summary: Delete resource access request decisions
       description: >
-        Delete all previously-stored resource access request decisions from
+        Delete previously-stored resource access request decisions from
         the decision database.
+        If the snap parameter is given, only delete resource access requests
+        for that snap.
+        If the app parameter is given along with the snap parameter, only
+        delete resource access requests for that app within the given snap.
+        The app parameter is ignored if the snap parameter is not given.
       tags:
         - decisions
+      parameters:
+        - $ref: "#/components/parameters/snap-param"
+        - $ref: "#/components/parameters/app-param"
       responses:
         "200":
           description: >
-            Successfully deleted all resource access request decisions.
+            Successfully deleted resource access request decisions.
             All deleted decisions can be found in the response content.
           content:
             application/json:
@@ -419,106 +434,7 @@ paths:
           description: >
             Failed to delete resource access request decisions from the
             decision database.
-  /v2/prompting/decisions/snap/{snap}:
-    GET:
-      operationId: getDecisionsForSnap
-      summary: Get stored decisions for a snap
-      description: >
-        Get all resource access request decisions for all apps within the
-        given snap.
-      tags:
-        - decisions
-      parameters:
-        - $ref: "#/components/parameters/snap-param"
-        - $ref: "#/components/parameters/follow-param"
-      responses:
-        "200":
-          description: >
-            Successfully retrieved the resource access request decisions for
-            the given snap.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/stored-decisions"
-        "404":
-          description: >
-            Failed to retrieve the resource access request decisions for the
-            given snap.
-    DELETE:
-      operationId: deleteDecisionsForSnap
-      summary: Delete stored decisions for a snap
-      description: >
-        Delete all previously-stored resource access request decisions for all
-        apps within the given snap from the decision database.
-      tags:
-        - decisions
-      parameters:
-        - $ref: "#/components/parameters/snap-param"
-      responses:
-        "200":
-          description: >
-            Successfully deleted all resource access request decisions for the
-            given snap.
-            All deleted decisions can be found in the response content.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/stored-decisions"
-        "404":
-          description: >
-            Failed to delete resource access request decisions for the given
-            snap from the decision database.
-  /v2/prompting/decisions/snap/{snap}/{app}:
-    GET:
-      operationId: getDecisionsForSnapApp
-      summary: Get stored decisions for an app
-      description: >
-        Get all resource access request decisions for the given app within the
-        given snap.
-      tags:
-        - decisions
-      parameters:
-        - $ref: "#/components/parameters/snap-param"
-        - $ref: "#/components/parameters/app-param"
-      responses:
-        "200":
-          description: >
-            Successfully retrieved the resource access request decisions for
-            the given app within the given snap.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/stored-decisions"
-        "404":
-          description: >
-            Failed to retrieve the resource access request decisions for the
-            given app within the given snap.
-    DELETE:
-      operationId: deleteDecisionsForSnapApp
-      summary: Delete stored decisions for an app
-      description: >
-        Delete all previously-stored resource access request decisions for the
-        given app within the given snap.
-      tags:
-        - decisions
-      parameters:
-        - $ref: "#/components/parameters/snap-param"
-        - $ref: "#/components/parameters/app-param"
-      responses:
-        "200":
-          description: >
-            Successfully deleted all resource access request decisions for the
-            given app within the given snap.
-            All deleted decisions can be found in the response content.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/stored-decisions"
-        "404":
-          description: >
-            Failed to delete resource access request decisions for the given
-            app within the given snap from the decision database.
-  /v2/prompting/decisions/id/{id}:
+  /v2/prompting/decisions/{id}:
     GET:
       operationId: getDecisionWithId
       summary: Get a particular resource access request decision
