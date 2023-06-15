@@ -129,7 +129,7 @@ components:
           $ref: "#/components/schemas/path"
         resource-type:
           $ref: "#/components/schemas/resource-type"
-        permission:
+        permissions:
           $ref: "#/components/schemas/permissions"
     response:
       description: >
