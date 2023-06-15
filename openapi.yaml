@@ -117,7 +117,7 @@ components:
         - app
         - path
         - resource-type
-        - permission
+        - permissions
       properties:
         id:
           $ref: "#/components/schemas/id"
@@ -130,7 +130,7 @@ components:
         resource-type:
           $ref: "#/components/schemas/resource-type"
         permission:
-          $ref: "#/components/schemas/permission"
+          $ref: "#/components/schemas/permissions"
     response:
       description: >
         A response to a resource access request.
