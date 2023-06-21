@@ -210,12 +210,6 @@ components:
       allOf:
         - $ref: "#/components/schemas/decision-metadata"
         - $ref: "#/components/schemas/decision-contents"
-    stored-decisions:
-      description: >
-        A list of access decisions.
-      type: array
-      items:
-        $ref: "#/components/schemas/decision"
     changed-decisions:
       description: >
         The access decisions which have been created, modified, or deleted as
@@ -389,7 +383,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/stored-decisions"
+                description: >
+                  The existing access decisions.
+                type: array
+                items:
+                  $ref: "#/components/schemas/decision"
         "404":
           description: >
             Failed to retrieve existing access decisions from the decision
@@ -443,7 +441,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/stored-decisions"
+                description: >
+                  The access decisions which were deleted.
+                type: array
+                items:
+                  $ref: "#/components/schemas/decision"
         "404":
           description: >
             Failed to delete access decisions from the decision database.
