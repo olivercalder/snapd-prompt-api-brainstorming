@@ -81,9 +81,9 @@ components:
       description: >
         Whether to allow or deny access.
       type: boolean
-    duration:
+    lifetime:
       description: >
-        The duration for which the access decision should be valid.
+        The lifetime for which the access decision should be valid.
       type: string
       enum:
         - single
@@ -146,12 +146,12 @@ components:
       type: object
       required:
         - allow
-        - duration
+        - lifetime
       properties:
         allow:
           $ref: "#/components/schemas/allow"
-        duration:
-          $ref: "#/components/schemas/duration"
+        lifetime:
+          $ref: "#/components/schemas/lifetime"
         permissions:
           $ref: "#/components/schemas/permissions"
         path-scope:
@@ -184,7 +184,7 @@ components:
         - path
         - resource-type
         - allow
-        - duration
+        - lifetime
         - permissions
         - path-scope
       properties:
@@ -198,8 +198,8 @@ components:
           $ref: "#/components/schemas/resource-type"
         allow:
           $ref: "#/components/schemas/allow"
-        duration:
-          $ref: "#/components/schemas/duration"
+        lifetime:
+          $ref: "#/components/schemas/lifetime"
         permissions:
           $ref: "#/components/schemas/permissions"
         path-scope:
