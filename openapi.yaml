@@ -235,30 +235,6 @@ components:
           items:
             $ref: "#/components/schemas/decision"
   parameters:
-    follow-param:
-      description: >
-        Open a long-lived connection to be notified of future prompt requests.
-      name: follow
-      in: query
-      required: false
-      schema:
-        $ref: "#/components/schemas/follow"
-    snap-param:
-      description: >
-        The name of the snap for which to get access decisions.
-      name: snap
-      in: query
-      required: false
-      schema:
-        $ref: "#/components/schemas/snap"
-    app-param:
-      description: >
-        The name of the app for which to get access decisions.
-      name: app
-      in: query
-      required: false
-      schema:
-        $ref: "#/components/schemas/app"
     prompt-id-param:
       description: >
         The ID of the prompt request.
@@ -290,7 +266,14 @@ paths:
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/follow-param"
+        - name: follow
+          in: query
+          description: >
+            Open a long-lived connection using "json-seq" to be notified of
+            any future prompt requests.
+          required: false
+          schema:
+            $ref: "#/components/schemas/follow"
       responses:
         "200":
           description: >
@@ -365,16 +348,44 @@ paths:
       summary: Get existing access decisions
       description: >
         Retrieve existing access decisions from the decision database.
+
         If the snap parameter is given, only retrieve decisions for that snap.
+
         If the app parameter is given along with the snap parameter, only
         retrieve decisions for that app within the given snap.
-        The app parameter is ignored if the snap parameter is not given.
+
+        The follow and the app parameters are both ignored if the snap
+        parameter is not given.
       tags:
         - decisions
       parameters:
-        - $ref: "#/components/parameters/follow-param"
-        - $ref: "#/components/parameters/snap-param"
-        - $ref: "#/components/parameters/app-param"
+        - name: snap
+          in: query
+          description: >
+            The snap for which to retrieve access decisions.
+          required: false
+          schema:
+            $ref: "#/components/schemas/snap"
+        - name: app
+          in: query
+          description: >
+            The app within the given snap for which to retrieve access
+            decisions.
+
+            Ignored if the snap parameter is not also given.
+          required: false
+          schema:
+            $ref: "#/components/schemas/app"
+        - name: follow
+          in: query
+          description: >
+            Open a long-lived connection using "json-seq" to be notified of
+            future changes to stored decisions.
+
+            Ignored if the snap parameter is not also given.
+          required: false
+          schema:
+            $ref: "#/components/schemas/follow"
       responses:
         "200":
           description: >
@@ -431,8 +442,22 @@ paths:
       tags:
         - decisions
       parameters:
-        - $ref: "#/components/parameters/snap-param"
-        - $ref: "#/components/parameters/app-param"
+        - name: snap
+          in: query
+          description: >
+            The snap for which to delete access decisions.
+          required: true
+          schema:
+            $ref: "#/components/schemas/snap"
+        - name: app
+          in: query
+          description: >
+            The app within the given snap for which to delete access decisions.
+
+            Ignored if the snap parameter is not also given.
+          required: false
+          schema:
+            $ref: "#/components/schemas/app"
       responses:
         "200":
           description: >
