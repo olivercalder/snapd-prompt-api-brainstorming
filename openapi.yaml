@@ -458,6 +458,16 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/app"
+        - name: confirm-delete
+          in: query
+          description: >
+            Confirm that all the decisions for the given snap (optionally,
+            app) should be deleted.
+          required: true
+          schema:
+            description: >
+              Whether the decisions should be deleted.
+            type: boolean
       responses:
         "200":
           description: >
