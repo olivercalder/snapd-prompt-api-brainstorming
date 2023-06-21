@@ -281,22 +281,6 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/decision-id"
-    reply-param:
-      description: >
-        A reply to the given prompt request.
-      name: reply
-      in: query
-      required: true
-      schema:
-        $ref: "#/components/schemas/reply"
-    decision-param:
-      description: >
-        The contents of the access decision.
-      name: decision
-      in: query
-      required: true
-      schema:
-        $ref: "#/components/schemas/decision-contents"
 tags:
   - name: requests
     description: Methods related to outstanding prompt requests.
@@ -351,8 +335,8 @@ paths:
           description: >
             No prompt request found with the given ID.
     POST:
-      operationId: respondToRequestWithId
-      summary: Respond to the given prompt request
+      operationId: replyToRequestWithId
+      summary: Reply to the given prompt request
       description: >
         Respond to the given prompt request, providing information collected
         by prompting the user for a decision about access to the object of
@@ -361,7 +345,14 @@ paths:
         - requests
       parameters:
         - $ref: "#/components/parameters/prompt-id-param"
-        - $ref: "#/components/parameters/reply-param"
+      requestBody:
+        description: >
+          The contents of the reply to the prompt request.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/reply"
       responses:
         "200":
           description: >
@@ -411,8 +402,14 @@ paths:
         prompted with a prompt request.
       tags:
         - decisions
-      parameters:
-        - $ref: "#/components/parameters/decision-param"
+      requestBody:
+        description: >
+          The contents of the access decision to be added.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/decision-contents"
       responses:
         "200":
           description: >
@@ -480,7 +477,14 @@ paths:
         - decisions
       parameters:
         - $ref: "#/components/parameters/decision-id-param"
-        - $ref: "#/components/parameters/reply-param"
+      requestBody:
+        description: >
+          The updated contents of the reply for the given access decision.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/reply"
       responses:
         "200":
           description: >
