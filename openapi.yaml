@@ -97,7 +97,7 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/permission"
-    path-access:
+    path-scope:
       description: >
         Apply the same decision on either the path itself, all other files in
         the directory of the requested path, or all other files in the path's
@@ -154,8 +154,8 @@ components:
           $ref: "#/components/schemas/duration"
         permissions:
           $ref: "#/components/schemas/permissions"
-        path-access:
-          $ref: "#/components/schemas/path-access"
+        path-scope:
+          $ref: "#/components/schemas/path-scope"
       # store-parent:
       #   description: >
       #     Store the parent of the requested path in the database,
@@ -186,7 +186,7 @@ components:
         - allow
         - duration
         - permissions
-        - path-access
+        - path-scope
       properties:
         snap:
           $ref: "#/components/schemas/snap"
@@ -202,8 +202,8 @@ components:
           $ref: "#/components/schemas/duration"
         permissions:
           $ref: "#/components/schemas/permissions"
-        path-access:
-          $ref: "#/components/schemas/path-access"
+        path-scope:
+          $ref: "#/components/schemas/path-scope"
     decision:
       description: >
         A saved access decision with a corresponding ID and timestamp.
