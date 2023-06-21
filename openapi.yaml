@@ -13,30 +13,37 @@ components:
       description: >
         Whether or not to open a long-lived connection.
       type: boolean
-    id:
+    prompt-id:
       description: >
-        The unique ID of a request.
+        The unique ID of a prompt request.
+      type: string
+    decision-id:
+      description: >
+        The unique ID of an access decision.
       type: string
     timestamp:
       description: >
-        The timestamp at which a request was created or last modified.
+        The timestamp at which a decision was created or last modified.
       type: string
       format: date-time
     snap:
       description: >
-        The name of the snap which triggered the access request.
+        The name of the snap which corresponds to the prompt request or access
+        decision.
       type: string
     app:
       description: >
-        The name of the app which triggered the access request.
+        The name of the app which corresponds to the prompt request or access
+        decision.
       type: string
     path:
       description: >
-        The path of the resource being requested.
+        The path of the object of the prompt request or access decision.
       type: string
     resource-type:
       description: >
-        The device type or path type of the resource being requested.
+        The device type or path type of the object of the prompt request or
+        access decision.
         For example, a file, directory, or camera.
       type: string
       enum:
@@ -47,7 +54,7 @@ components:
         # TODO: add remaining resource types
     permission:
       description: >
-        The type of operation for which to apply a decision about access to a resource.
+        The operation for which a prompt request or access decision applies.
       type: string
       enum:
         - execute                # AA_MAY_EXEC, process may execute another program
@@ -72,11 +79,11 @@ components:
         - change-profile         # AA_MAY_CHANGE_PROFILE, process may change the apparmor profile on demand
     allow:
       description: >
-        Decision to allow or deny access to the given resource.
+        Whether to allow or deny access.
       type: boolean
     duration:
       description: >
-        The duration for which the response decision should be valid.
+        The duration for which the access decision should be valid.
       type: string
       enum:
         - single
@@ -85,7 +92,8 @@ components:
         - timeframe # TODO: how to store the timeframe?
     permissions:
       description: >
-        The list of permissions for which a decision applies.
+        The list of permissions for which a prompt request or access decision
+        applies.
       type: array
       items:
         $ref: "#/components/schemas/permission"
@@ -109,18 +117,19 @@ components:
         - subdirectories
     request:
       description: >
-        A request to access a particular resource.
+        An outstanding prompt request for the given snap and app to access
+        the given path with the given permissions.
       type: object
       required:
-        - id
+        - prompt-id
         - snap
         - app
         - path
         - resource-type
         - permissions
       properties:
-        id:
-          $ref: "#/components/schemas/id"
+        prompt-id:
+          $ref: "#/components/schemas/prompt-id"
         snap:
           $ref: "#/components/schemas/snap"
         app:
@@ -133,7 +142,7 @@ components:
           $ref: "#/components/schemas/permissions"
     response:
       description: >
-        A response to a resource access request.
+        A reply to a prompt request.
       type: object
       required:
         - allow
@@ -154,19 +163,20 @@ components:
       #   type: boolean
     decision-metadata:
       description: >
-        The internal metadata for a resource access request decision.
+        The metadata for an access decision, including the unique decision ID
+        and the timestamp at which that decision was created or modified.
       type: object
       required:
-        - id
+        - decision-id
         - timestamp
       properties:
-        id:
-          $ref: "#/components/schemas/id"
+        decision-id:
+          $ref: "#/components/schemas/decision-id"
         timestamp:
           $ref: "#/components/schemas/timestamp"
     decision-contents:
       description: >
-        A resource access request decision.
+        The body of an access decision.
       type: object
       required:
         - snap
@@ -196,45 +206,44 @@ components:
           $ref: "#/components/schemas/path-access"
     decision:
       description: >
-        A saved resource access request decision with a corresponding ID and
-        timestamp.
+        A saved access decision with a corresponding ID and timestamp.
       allOf:
         - $ref: "#/components/schemas/decision-metadata"
         - $ref: "#/components/schemas/decision-contents"
     stored-decisions:
       description: >
-        A list of resource access request decisions.
+        A list of access decisions.
       type: array
       items:
         $ref: "#/components/schemas/decision"
     changed-decisions:
       description: >
-        The resource access request decisions which have been created,
-        modified, or deleted as a result of a change.
+        The access decisions which have been created, modified, or deleted as
+        the result of a change.
       type: object
       properties:
         new:
           description: >
-            The resource access request decisions which have been created.
+            The access decisions which have been created.
           type: array
           items:
             $ref: "#/components/schemas/decision"
         modified:
           description: >
-            The resource access request decisions which have been modified.
+            The access decisions which have been modified.
           type: array
           items:
             $ref: "#/components/schemas/decision"
         deleted:
           description: >
-            The resource access request decisions which have been deleted.
+            The access decisions which have been deleted.
           type: array
           items:
             $ref: "#/components/schemas/decision"
   parameters:
     follow-param:
       description: >
-        Open a long-lived connection to be notified of future requests.
+        Open a long-lived connection to be notified of future prompt requests.
       name: follow
       in: query
       required: false
@@ -242,8 +251,7 @@ components:
         $ref: "#/components/schemas/follow"
     snap-param:
       description: >
-        The name of the snap for which to get resource access request
-        decisions.
+        The name of the snap for which to get access decisions.
       name: snap
       in: query
       required: false
@@ -251,23 +259,31 @@ components:
         $ref: "#/components/schemas/snap"
     app-param:
       description: >
-        The name of the app for which to get resource access request decisions.
+        The name of the app for which to get access decisions.
       name: app
       in: query
       required: false
       schema:
         $ref: "#/components/schemas/app"
-    id-param:
+    prompt-id-param:
       description: >
-        The ID of the resource access request.
+        The ID of the prompt request.
       name: id
       in: path
       required: true
       schema:
-        $ref: "#/components/schemas/id"
+        $ref: "#/components/schemas/prompt-id"
+    decision-id-param:
+      description: >
+        The ID of the access decision.
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/decision-id"
     response-param:
       description: >
-        A response to the given resource access request.
+        A reply to the given prompt request.
       name: response
       in: query
       required: true
@@ -275,7 +291,7 @@ components:
         $ref: "#/components/schemas/response"
     decision-param:
       description: >
-        The contents of the resource access request decision.
+        The contents of the access decision.
       name: decision
       in: query
       required: true
@@ -283,16 +299,16 @@ components:
         $ref: "#/components/schemas/decision-contents"
 tags:
   - name: requests
-    description: Methods related to outstanding resource access requests.
+    description: Methods related to outstanding prompt requests.
   - name: decisions
-    description: Methods related to previously-stored resource access request decisions.
+    description: Methods related to stored access decisions.
 paths:
   /v2/prompting/requests:
     GET:
       operationId: getRequests
-      summary: Retrieve all resource access requests
+      summary: Retrieve all prompt requests
       description: >
-        Retrieve all outstanding resource access requests.
+        Retrieve all outstanding prompt requests.
       tags:
         - requests
       parameters:
@@ -300,52 +316,51 @@ paths:
       responses:
         "200":
           description: >
-            Successfully retrieved all pending resource access requests.
+            Successfully retrieved all outstanding prompt requests.
           content:
             application/json:
               schema:
                 description: >
-                  The resource access requests which are currently pending.
+                  The prompt requests which are currently pending.
                 type: array
                 items:
                   $ref: "#/components/schemas/request"
         "404":
           description: >
-            Failed to retrieve resource access requests.
+            Failed to retrieve prompt requests.
   /v2/prompting/requests/{id}:
     GET:
       operationId: getRequestWithId
-      summary: Retrieve the request information for a particular request ID
+      summary: Retrieve the information for a particular prompt request
       description: >
-        Retrieve the resource access request information corresponding to the
-        given ID.
+        Retrieve the prompt request information corresponding to the given ID.
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/prompt-id-param"
       responses:
         "200":
           description: >
-            Successfully retrieved the request information for the resource
-            access request with the given ID.
+            Successfully retrieved the request information for the prompt
+            request with the given ID.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/request"
         "404":
           description: >
-            No resource access request found with the given ID.
+            No prompt request found with the given ID.
     POST:
       operationId: respondToRequestWithId
-      summary: Respond to the given resource access request
+      summary: Respond to the given prompt request
       description: >
-        Respond to the given resource access request, providing information
-        collected by prompting the user for a decision about access to the
-        corresponding resource.
+        Respond to the given prompt request, providing information collected
+        by prompting the user for a decision about access to the object of
+        the request.
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/prompt-id-param"
         - $ref: "#/components/parameters/response-param"
       responses:
         "200":
@@ -361,14 +376,12 @@ paths:
   /v2/prompting/decisions:
     GET:
       operationId: getDecisions
-      summary: Get existing resource access request decisions
+      summary: Get existing access decisions
       description: >
-        Retrieve existing resource access request decisions from the decision
-        database.
-        If the snap parameter is given, only retrieve resource access requests
-        for that snap.
+        Retrieve existing access decisions from the decision database.
+        If the snap parameter is given, only retrieve decisions for that snap.
         If the app parameter is given along with the snap parameter, only
-        retrieve resource access requests for that app within the given snap.
+        retrieve decisions for that app within the given snap.
         The app parameter is ignored if the snap parameter is not given.
       tags:
         - decisions
@@ -379,22 +392,22 @@ paths:
       responses:
         "200":
           description: >
-            Successfully retrieved existing resource access request decisions
-            from the decision database.
+            Successfully retrieved existing access decisions from the decision
+            database.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/stored-decisions"
         "404":
           description: >
-            Failed to retrieve existing resource access request decisions from
-            the decision database.
+            Failed to retrieve existing access decisions from the decision
+            database.
     POST:
       operationId: addDecision
-      summary: Create a new resource access request decision
+      summary: Create a new access decision
       description: >
-        Directly create a new resource access request rule without having
-        previously been prompted by a resource access request.
+        Directly create a new access decision without having previously been
+        prompted with a prompt request.
       tags:
         - decisions
       parameters:
@@ -402,24 +415,22 @@ paths:
       responses:
         "200":
           description: >
-            Successfully added the given resource access request decision.
+            Successfully added the given access decision.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/changed-decisions"
         "404":
           description: >
-            Failed to create the given resource access request decision.
+            Failed to create the given access decision.
     DELETE:
       operationId: deleteDecisions
-      summary: Delete resource access request decisions
+      summary: Delete existing access decisions
       description: >
-        Delete previously-stored resource access request decisions from
-        the decision database.
-        If the snap parameter is given, only delete resource access requests
-        for that snap.
+        Delete previously-stored access decisions from the decision database.
+        If the snap parameter is given, only delete decisions for that snap.
         If the app parameter is given along with the snap parameter, only
-        delete resource access requests for that app within the given snap.
+        delete decisions for that app within the given snap.
         The app parameter is ignored if the snap parameter is not given.
       tags:
         - decisions
@@ -429,7 +440,7 @@ paths:
       responses:
         "200":
           description: >
-            Successfully deleted resource access request decisions.
+            Successfully deleted access decisions.
             All deleted decisions can be found in the response content.
           content:
             application/json:
@@ -437,75 +448,70 @@ paths:
                 $ref: "#/components/schemas/stored-decisions"
         "404":
           description: >
-            Failed to delete resource access request decisions from the
-            decision database.
+            Failed to delete access decisions from the decision database.
   /v2/prompting/decisions/{id}:
     GET:
       operationId: getDecisionWithId
-      summary: Get a particular resource access request decision
+      summary: Get a particular access decision
       description: >
-        Get the resource access request decision corresponding to the given
-        request ID.
+        Get the access decision corresponding to the given decision ID.
       tags:
         - decisions
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/decision-id-param"
       responses:
         "200":
           description: >
-            Successfully retrieved the resource access request decision with
-            the given ID.
+            Successfully retrieved the access decision with the given ID.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/decision"
         "404":
           description: >
-            No resource access request decision found with the given ID.
+            No access decision found with the given ID.
     POST:
       operationId: modifyDecisionWithId
-      summary: Modify an existing resource access request decision
+      summary: Modify an existing access decision
       description: >
-        Modify the resource access request response corresponding to the given
-        request ID.
+        Modify the access response corresponding to the given request ID.
       tags:
         - decisions
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/decision-id-param"
         - $ref: "#/components/parameters/response-param"
       responses:
         "200":
           description: >
-            Successfully modified the resource access request decision with
-            the given ID.
+            Successfully modified the access decision with the given ID.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/changed-decisions"
         "404":
           description: >
-            No resource access request decision found with the given ID.
-            Ignore the given response information.
+            No access decision found with the given ID.
+            Ignored the given response information.
     DELETE:
       operationId: deleteDecisionWithId
-      summary: Delete a resource access request decision.
+      summary: Delete an access decision.
       description: >
-        Delete the resource access request decision with the given ID.
+        Delete the access decision with the given ID.
       tags:
         - decisions
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/decision-id-param"
       responses:
         "200":
           description: >
-            Successfully deleted the resource access request decision with the
-            given ID.  It can be found in the response content.
+            Successfully deleted the access decision with the given ID.
+            It can be found in the response content.
           content:
             applications/json:
               schema:
                 $ref: "#/components/schemas/decision"
         "404":
           description: >
-            No resource access request decision found with the given ID.
+            No access decision found with the given ID.
             Failed to delete decision.
 
