@@ -140,7 +140,7 @@ components:
           $ref: "#/components/schemas/resource-type"
         permissions:
           $ref: "#/components/schemas/permissions"
-    response:
+    reply:
       description: >
         A reply to a prompt request.
       type: object
@@ -281,14 +281,14 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/decision-id"
-    response-param:
+    reply-param:
       description: >
         A reply to the given prompt request.
-      name: response
+      name: reply
       in: query
       required: true
       schema:
-        $ref: "#/components/schemas/response"
+        $ref: "#/components/schemas/reply"
     decision-param:
       description: >
         The contents of the access decision.
@@ -361,18 +361,19 @@ paths:
         - requests
       parameters:
         - $ref: "#/components/parameters/prompt-id-param"
-        - $ref: "#/components/parameters/response-param"
+        - $ref: "#/components/parameters/reply-param"
       responses:
         "200":
           description: >
-            Successfully received the response for the request with the given ID.
+            Successfully received the reply for the prompt request with the
+            given ID.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/changed-decisions"
         "404":
           description: >
-            No request found with the given ID, ignoring response.
+            No request found with the given ID, ignoring reply.
   /v2/prompting/decisions:
     GET:
       operationId: getDecisions
@@ -474,12 +475,12 @@ paths:
       operationId: modifyDecisionWithId
       summary: Modify an existing access decision
       description: >
-        Modify the access response corresponding to the given request ID.
+        Modify the access decision corresponding to the given request ID.
       tags:
         - decisions
       parameters:
         - $ref: "#/components/parameters/decision-id-param"
-        - $ref: "#/components/parameters/response-param"
+        - $ref: "#/components/parameters/reply-param"
       responses:
         "200":
           description: >
@@ -491,7 +492,7 @@ paths:
         "404":
           description: >
             No access decision found with the given ID.
-            Ignored the given response information.
+            Ignored the given reply information.
     DELETE:
       operationId: deleteDecisionWithId
       summary: Delete an access decision.
