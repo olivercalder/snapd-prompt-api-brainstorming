@@ -196,7 +196,7 @@ Modify the stored decision with the given ID.
 
 The updated [`reply`](#reply) information to replace that which was previously associated with the decision.
 
-Since a `reply` object is used as the payload, the `allow` (allow/deny), `lifetime`, `permissions` (list of operations like `read`, `write`, etc.), and `path-scope` (file, directory, subdirectories) fields of the stored access decision can be modified.
+Since a `reply` object is used as the payload, the `allow` (allow/deny), `lifespan`, `permissions` (list of operations like `read`, `write`, etc.), and `path-scope` (file, directory, subdirectories) fields of the stored access decision can be modified.
 
 ##### Response Body
 
@@ -236,7 +236,7 @@ The [`decision`](#decision) information which was deleted.
 | Field | Required/Optional | Description | Options |
 | -- | -- | ---------------- | ---- |
 | `allow` | Required | Whether access is allowed or denied | `true`, `false` |
-| `lifetime` | Required | How long the reply should be valid | `single`, `session`, `always`, `timeframe` |
+| `lifespan` | Required | How long the reply should be valid | `single`, `session`, `always`, `timeframe` |
 | `permissions` | Optional | A list of operations for which the access applies --- the permissions in the original request are assumed | List of [`permission`](#permission) |
 | `path-scope` | Optional | The paths for which the access applies | `file`, `directory`, `subdirectories` |
 
@@ -251,7 +251,7 @@ The [`decision`](#decision) information which was deleted.
 | `path` | Required | The path of the resource associated with the decision | |
 | `resource-type` | Required | The device type or path type of the resource being requested | `file`, `directory`, `camera`, `microphone`, etc. |
 | `allow` | Required | Whether access is allowed or denied | `true`, `false` |
-| `lifetime` | Required | How long the decision should be valid | `single`, `session`, `always`, `timeframe` |
+| `lifespan` | Required | How long the decision should be valid | `single`, `session`, `always`, `timeframe` |
 | `permissions` | Required | The list of operations for which the access decision applies | List of [`permission`](#permission) |
 | `path-scope` | Required | The paths for which the access decision applies | `file`, `directory`, `subdirectories` |
 

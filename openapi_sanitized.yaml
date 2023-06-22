@@ -13,7 +13,7 @@ components:
       description: >
         Whether or not to open a long-lived connection.
       type: boolean
-    request-id:
+    prompt-id:
       description: >
         The unique ID of a prompt request.
       type: string
@@ -121,15 +121,15 @@ components:
         the given path with the given permissions.
       type: object
       required:
-        - request-id
+        - prompt-id
         - snap
         - app
         - path
         - resource-type
         - permissions
       properties:
-        request-id:
-          $ref: "#/components/schemas/request-id"
+        prompt-id:
+          $ref: "#/components/schemas/prompt-id"
         snap:
           $ref: "#/components/schemas/snap"
         app:
@@ -235,14 +235,14 @@ components:
           items:
             $ref: "#/components/schemas/decision"
   parameters:
-    request-id-param:
+    prompt-id-param:
       description: >
         The ID of the prompt request.
       name: id
       in: path
       required: true
       schema:
-        $ref: "#/components/schemas/request-id"
+        $ref: "#/components/schemas/prompt-id"
     decision-id-param:
       description: >
         The ID of the access decision.
@@ -258,7 +258,7 @@ tags:
     description: Methods related to stored access decisions.
 paths:
   /v2/prompting/requests:
-    GET:
+    get:
       operationId: getRequests
       summary: Retrieve all prompt requests
       description: >
@@ -290,7 +290,7 @@ paths:
           description: >
             Failed to retrieve prompt requests.
   /v2/prompting/requests/{id}:
-    GET:
+    get:
       operationId: getRequestWithId
       summary: Retrieve the information for a particular prompt request
       description: >
@@ -298,7 +298,7 @@ paths:
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/request-id-param"
+        - $ref: "#/components/parameters/prompt-id-param"
       responses:
         "200":
           description: >
@@ -311,7 +311,7 @@ paths:
         "404":
           description: >
             No prompt request found with the given ID.
-    POST:
+    post:
       operationId: replyToRequestWithId
       summary: Reply to the given prompt request
       description: >
@@ -321,7 +321,7 @@ paths:
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/request-id-param"
+        - $ref: "#/components/parameters/prompt-id-param"
       requestBody:
         description: >
           The contents of the reply to the prompt request.
@@ -343,7 +343,7 @@ paths:
           description: >
             No request found with the given ID, ignoring reply.
   /v2/prompting/decisions:
-    GET:
+    get:
       operationId: getDecisions
       summary: Get existing access decisions
       description: >
@@ -403,7 +403,7 @@ paths:
           description: >
             Failed to retrieve existing access decisions from the decision
             database.
-    POST:
+    post:
       operationId: addDecision
       summary: Create a new access decision
       description: >
@@ -430,7 +430,7 @@ paths:
         "404":
           description: >
             Failed to create the given access decision.
-    DELETE:
+    delete:
       operationId: deleteDecisions
       summary: Delete existing access decisions
       description: >
@@ -485,7 +485,7 @@ paths:
           description: >
             Failed to delete access decisions from the decision database.
   /v2/prompting/decisions/{id}:
-    GET:
+    get:
       operationId: getDecisionWithId
       summary: Get a particular access decision
       description: >
@@ -505,7 +505,7 @@ paths:
         "404":
           description: >
             No access decision found with the given ID.
-    POST:
+    post:
       operationId: modifyDecisionWithId
       summary: Modify an existing access decision
       description: >
@@ -534,7 +534,7 @@ paths:
           description: >
             No access decision found with the given ID.
             Ignored the given reply information.
-    DELETE:
+    delete:
       operationId: deleteDecisionWithId
       summary: Delete an access decision.
       description: >
