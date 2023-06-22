@@ -13,7 +13,7 @@ components:
       description: >
         Whether or not to open a long-lived connection.
       type: boolean
-    prompt-id:
+    request-id:
       description: >
         The unique ID of a prompt request.
       type: string
@@ -121,15 +121,15 @@ components:
         the given path with the given permissions.
       type: object
       required:
-        - prompt-id
+        - request-id
         - snap
         - app
         - path
         - resource-type
         - permissions
       properties:
-        prompt-id:
-          $ref: "#/components/schemas/prompt-id"
+        request-id:
+          $ref: "#/components/schemas/request-id"
         snap:
           $ref: "#/components/schemas/snap"
         app:
@@ -235,14 +235,14 @@ components:
           items:
             $ref: "#/components/schemas/decision"
   parameters:
-    prompt-id-param:
+    request-id-param:
       description: >
         The ID of the prompt request.
       name: id
       in: path
       required: true
       schema:
-        $ref: "#/components/schemas/prompt-id"
+        $ref: "#/components/schemas/request-id"
     decision-id-param:
       description: >
         The ID of the access decision.
@@ -298,7 +298,7 @@ paths:
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/prompt-id-param"
+        - $ref: "#/components/parameters/request-id-param"
       responses:
         "200":
           description: >
@@ -321,7 +321,7 @@ paths:
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/prompt-id-param"
+        - $ref: "#/components/parameters/request-id-param"
       requestBody:
         description: >
           The contents of the reply to the prompt request.
