@@ -354,7 +354,8 @@ paths:
             The app within the given snap for which to retrieve access
             decisions.
 
-            Ignored if the snap parameter is not also given.
+            Returns an error if the `app` parameter is given without the `snap`
+            parameter also being given.
           required: false
           schema:
             $ref: "#/components/schemas/app"
@@ -364,7 +365,8 @@ paths:
             Open a long-lived connection using "json-seq" to be notified of
             future changes to stored decisions.
 
-            Ignored if the snap parameter is not also given.
+            Returns an error if the `follow` parameter is given without `snap`
+            parameter also being given.
           required: false
           schema:
             $ref: "#/components/schemas/follow"
@@ -381,6 +383,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/decision"
+        "400":
+          description: >
+            The `snap` parameter is required when using the `app` or `follow`
+            parameters.
         "404":
           description: >
             Failed to retrieve existing access decisions from the decision
@@ -435,8 +441,6 @@ paths:
           in: query
           description: >
             The app within the given snap for which to delete access decisions.
-
-            Ignored if the snap parameter is not also given.
           required: false
           schema:
             $ref: "#/components/schemas/app"

@@ -122,9 +122,9 @@ Get existing access decisions.
 
 - `snap`: Only get stored access decisions associated with the given snap.
 - `app`: Only get stored access decisions associated with the given app within the given snap.
-  - The `app` parameter is ignored if the `snap` parameter is not also included.
+  - If the `app` parameter is included without the `snap` parameter, an error is returned.
 - `follow`: Open a long-lived connection using ["json-seq"](https://docs.google.com/document/d/1vTq0iGVypVEeZhm8y1oTHLTRx8sOXDLOJjU-t89FhTc) so that whenever an access decision is added, modified, or deleted, it is sent immediately along this open connection.
-  - The `follow` parameter is ignored if the `snap` parameter is not also included.
+  - If the `follow` parameter is included without the `snap` parameter, an error is returned.
 
 ##### Request Body
 
