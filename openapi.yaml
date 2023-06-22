@@ -17,32 +17,32 @@ components:
       description: >
         The unique ID of a prompt request.
       type: string
-    decision-id:
+    rule-id:
       description: >
-        The unique ID of an access decision.
+        The unique ID of an access rule.
       type: string
     timestamp:
       description: >
-        The timestamp at which a decision was created or last modified.
+        The timestamp at which an access rule was created or last modified.
       type: string
       format: date-time
     snap:
       description: >
         The name of the snap which corresponds to the prompt request or access
-        decision.
+        rule.
       type: string
     app:
       description: >
         The name of the app which corresponds to the prompt request or access
-        decision.
+        rule.
       type: string
     path:
       description: >
-        The path of the object of the prompt request or access decision.
+        The path of the object of the prompt request or access rule.
       type: string
     permission:
       description: >
-        The operation for which a prompt request or access decision applies.
+        The operation for which a prompt request or access rule applies.
       type: string
       enum:
         - execute                # AA_MAY_EXEC, process may execute another program
@@ -71,7 +71,7 @@ components:
       type: boolean
     lifespan:
       description: >
-        The lifespan for which the access decision should be valid.
+        The lifespan for which the access rule should be valid.
       type: string
       enum:
         - single
@@ -80,15 +80,15 @@ components:
         - timeframe # TODO: how to store the timeframe?
     permissions:
       description: >
-        The list of permissions for which a prompt request or access decision
+        The list of permissions for which a prompt request or access rule
         applies.
       type: array
       items:
         $ref: "#/components/schemas/permission"
     path-scope:
       description: >
-        Apply the same decision on either the path itself, all other files in
-        the directory of the requested path, or all other files in the path's
+        Apply the same rule on either the path itself, all other files in the
+        directory of the requested path, or all other files in the path's
         directory and all subdirectories.
 
         The subdirectories value is a superset of the the directory value.
@@ -146,22 +146,22 @@ components:
       #     Store the parent of the requested path in the database,
       #     rather than the path itself.
       #   type: boolean
-    decision-metadata:
+    rule-metadata:
       description: >
-        The metadata for an access decision, including the unique decision ID
-        and the timestamp at which that decision was created or modified.
+        The metadata for an access rule, including the unique rule ID and the
+        timestamp at which that rule was created or modified.
       type: object
       required:
-        - decision-id
+        - rule-id
         - timestamp
       properties:
-        decision-id:
-          $ref: "#/components/schemas/decision-id"
+        rule-id:
+          $ref: "#/components/schemas/rule-id"
         timestamp:
           $ref: "#/components/schemas/timestamp"
-    decision-contents:
+    rule-contents:
       description: >
-        The body of an access decision.
+        The body of an access rule.
       type: object
       required:
         - snap
@@ -186,36 +186,36 @@ components:
           $ref: "#/components/schemas/permissions"
         path-scope:
           $ref: "#/components/schemas/path-scope"
-    decision:
+    rule:
       description: >
-        A saved access decision with a corresponding ID and timestamp.
+        A saved access rule with a corresponding ID and timestamp.
       allOf:
-        - $ref: "#/components/schemas/decision-metadata"
-        - $ref: "#/components/schemas/decision-contents"
-    changed-decisions:
+        - $ref: "#/components/schemas/rule-metadata"
+        - $ref: "#/components/schemas/rule-contents"
+    changed-rules:
       description: >
-        The access decisions which have been created, modified, or deleted as
+        The access rules which have been created, modified, or deleted as
         the result of a change.
       type: object
       properties:
         new:
           description: >
-            The access decisions which have been created.
+            The access rules which have been created.
           type: array
           items:
-            $ref: "#/components/schemas/decision"
+            $ref: "#/components/schemas/rule"
         modified:
           description: >
-            The access decisions which have been modified.
+            The access rules which have been modified.
           type: array
           items:
-            $ref: "#/components/schemas/decision"
+            $ref: "#/components/schemas/rule"
         deleted:
           description: >
-            The access decisions which have been deleted.
+            The access rules which have been deleted.
           type: array
           items:
-            $ref: "#/components/schemas/decision"
+            $ref: "#/components/schemas/rule"
   parameters:
     request-id-param:
       description: >
@@ -225,19 +225,19 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/request-id"
-    decision-id-param:
+    rule-id-param:
       description: >
-        The ID of the access decision.
+        The ID of the access rule.
       name: id
       in: path
       required: true
       schema:
-        $ref: "#/components/schemas/decision-id"
+        $ref: "#/components/schemas/rule-id"
 tags:
   - name: requests
     description: Methods related to outstanding prompt requests.
-  - name: decisions
-    description: Methods related to stored access decisions.
+  - name: rules
+    description: Methods related to stored access rules.
 paths:
   /v2/prompting/requests:
     GET:
@@ -320,39 +320,38 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/changed-decisions"
+                $ref: "#/components/schemas/changed-rules"
         "404":
           description: >
             No request found with the given ID, ignoring reply.
-  /v2/prompting/decisions:
+  /v2/prompting/rules:
     GET:
-      operationId: getDecisions
-      summary: Get existing access decisions
+      operationId: getRules
+      summary: Get existing access rules
       description: >
-        Retrieve existing access decisions from the decision database.
+        Retrieve existing access rules from the rule database.
 
-        If the snap parameter is given, only retrieve decisions for that snap.
+        If the snap parameter is given, only retrieve rules for that snap.
 
         If the app parameter is given along with the snap parameter, only
-        retrieve decisions for that app within the given snap.
+        retrieve rules for that app within the given snap.
 
         The follow and the app parameters are both ignored if the snap
         parameter is not given.
       tags:
-        - decisions
+        - rules
       parameters:
         - name: snap
           in: query
           description: >
-            The snap for which to retrieve access decisions.
+            The snap for which to retrieve access rules.
           required: false
           schema:
             $ref: "#/components/schemas/snap"
         - name: app
           in: query
           description: >
-            The app within the given snap for which to retrieve access
-            decisions.
+            The app within the given snap for which to retrieve access rules.
 
             Returns an error if the `app` parameter is given without the `snap`
             parameter also being given.
@@ -363,7 +362,7 @@ paths:
           in: query
           description: >
             Open a long-lived connection using "json-seq" to be notified of
-            future changes to stored decisions.
+            future changes to stored rules.
 
             Returns an error if the `follow` parameter is given without `snap`
             parameter also being given.
@@ -373,136 +372,135 @@ paths:
       responses:
         "200":
           description: >
-            Successfully retrieved existing access decisions from the decision
+            Successfully retrieved existing access rules from the rule
             database.
           content:
             application/json:
               schema:
                 description: >
-                  The existing access decisions.
+                  The existing access rules.
                 type: array
                 items:
-                  $ref: "#/components/schemas/decision"
+                  $ref: "#/components/schemas/rule"
         "400":
           description: >
             The `snap` parameter is required when using the `app` or `follow`
             parameters.
         "404":
           description: >
-            Failed to retrieve existing access decisions from the decision
-            database.
+            Failed to retrieve existing access rules from the rule database.
     POST:
-      operationId: addDecision
-      summary: Create a new access decision
+      operationId: addRule
+      summary: Create a new access rule
       description: >
-        Directly create a new access decision without having previously been
+        Directly create a new access rule without having previously been
         prompted with a prompt request.
       tags:
-        - decisions
+        - rules
       requestBody:
         description: >
-          The contents of the access decision to be added.
+          The contents of the access rule to be added.
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/decision-contents"
+              $ref: "#/components/schemas/rule-contents"
       responses:
         "200":
           description: >
-            Successfully added the given access decision.
+            Successfully added the given access rule.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/changed-decisions"
+                $ref: "#/components/schemas/changed-rules"
         "404":
           description: >
-            Failed to create the given access decision.
+            Failed to create the given access rule.
     DELETE:
-      operationId: deleteDecisions
-      summary: Delete existing access decisions
+      operationId: deleteRules
+      summary: Delete existing access rules
       description: >
-        Delete previously-stored access decisions from the decision database.
-        If the snap parameter is given, only delete decisions for that snap.
-        If the app parameter is given along with the snap parameter, only
-        delete decisions for that app within the given snap.
-        The app parameter is ignored if the snap parameter is not given.
+        Delete previously-stored access rules for the given snap from the rule
+        database.
+
+        If the `app` parameter is given, only delete rules for that app within
+        the given snap.
       tags:
-        - decisions
+        - rules
       parameters:
         - name: snap
           in: query
           description: >
-            The snap for which to delete access decisions.
+            The snap for which to delete access rules.
           required: true
           schema:
             $ref: "#/components/schemas/snap"
         - name: app
           in: query
           description: >
-            The app within the given snap for which to delete access decisions.
+            The app within the given snap for which to delete access rules.
           required: false
           schema:
             $ref: "#/components/schemas/app"
         - name: confirm-delete
           in: query
           description: >
-            Confirm that all the decisions for the given snap (optionally,
-            app) should be deleted.
+            Confirm that all the rules for the given snap (optionally, app)
+            should be deleted.
           required: true
           schema:
             description: >
-              Whether the decisions should be deleted.
+              Whether the rules should be deleted.
             type: boolean
       responses:
         "200":
           description: >
-            Successfully deleted access decisions.
-            All deleted decisions can be found in the response content.
+            Successfully deleted access rules.
+            All deleted rules can be found in the response content.
           content:
             application/json:
               schema:
                 description: >
-                  The access decisions which were deleted.
+                  The access rules which were deleted.
                 type: array
                 items:
-                  $ref: "#/components/schemas/decision"
+                  $ref: "#/components/schemas/rule"
         "404":
           description: >
-            Failed to delete access decisions from the decision database.
-  /v2/prompting/decisions/{id}:
+            Failed to delete access rules from the rule database.
+  /v2/prompting/rules/{id}:
     GET:
-      operationId: getDecisionWithId
-      summary: Get a particular access decision
+      operationId: getRuleWithId
+      summary: Get a particular access rule
       description: >
-        Get the access decision corresponding to the given decision ID.
+        Get the access rule corresponding to the given rule ID.
       tags:
-        - decisions
+        - rules
       parameters:
-        - $ref: "#/components/parameters/decision-id-param"
+        - $ref: "#/components/parameters/rule-id-param"
       responses:
         "200":
           description: >
-            Successfully retrieved the access decision with the given ID.
+            Successfully retrieved the access rule with the given ID.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/decision"
+                $ref: "#/components/schemas/rule"
         "404":
           description: >
-            No access decision found with the given ID.
+            No access rule found with the given ID.
     POST:
-      operationId: modifyDecisionWithId
-      summary: Modify an existing access decision
+      operationId: modifyRuleWithId
+      summary: Modify an existing access rule
       description: >
-        Modify the access decision corresponding to the given request ID.
+        Modify the access rule corresponding to the given request ID.
       tags:
-        - decisions
+        - rules
       parameters:
-        - $ref: "#/components/parameters/decision-id-param"
+        - $ref: "#/components/parameters/rule-id-param"
       requestBody:
         description: >
-          The updated contents of the reply for the given access decision.
+          The updated contents of the reply for the given access rule.
         required: true
         content:
           application/json:
@@ -511,35 +509,35 @@ paths:
       responses:
         "200":
           description: >
-            Successfully modified the access decision with the given ID.
+            Successfully modified the access rule with the given ID.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/changed-decisions"
+                $ref: "#/components/schemas/changed-rules"
         "404":
           description: >
-            No access decision found with the given ID.
+            No access rule found with the given ID.
             Ignored the given reply information.
     DELETE:
-      operationId: deleteDecisionWithId
-      summary: Delete an access decision.
+      operationId: deleteRuleWithId
+      summary: Delete an access rule.
       description: >
-        Delete the access decision with the given ID.
+        Delete the access rule with the given ID.
       tags:
-        - decisions
+        - rules
       parameters:
-        - $ref: "#/components/parameters/decision-id-param"
+        - $ref: "#/components/parameters/rule-id-param"
       responses:
         "200":
           description: >
-            Successfully deleted the access decision with the given ID.
+            Successfully deleted the access rule with the given ID.
             It can be found in the response content.
           content:
             applications/json:
               schema:
-                $ref: "#/components/schemas/decision"
+                $ref: "#/components/schemas/rule"
         "404":
           description: >
-            No access decision found with the given ID.
-            Failed to delete decision.
+            No access rule found with the given ID.
+            Failed to delete rule.
 
