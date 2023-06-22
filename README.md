@@ -74,7 +74,7 @@ List of [`request`](#request) objects.
 
 ### `/v2/prompting/requests/{id}`
 
-Actions for a particular resource prompt request.
+Actions for a particular prompt request.
 
 #### `GET /v2/prompting/requests/{id}`
 
@@ -94,7 +94,7 @@ The [`request`](#request) object corresponding to the given ID.
 
 #### `POST /v2/prompting/requests/{id}`
 
-Reply to the resource access request with the given ID.
+Reply to the access request with the given ID.
 
 ##### Parameters
 
@@ -228,7 +228,6 @@ The [`decision`](#decision) information which was deleted.
 | `snap` | Required | The name of the snap which triggered the request | |
 | `app` | Required | The name of the app which triggered the request | |
 | `path` | Required | The path of the resource being requested | |
-| `resource-type` | Required | The device type or path type of the resource being requested | `file`, `directory`, `camera`, `microphone`, etc. |
 | `permissions` | Required | The permissions being requested | List of [`permission`](#permission) |
 
 ### `reply`
@@ -249,7 +248,6 @@ The [`decision`](#decision) information which was deleted.
 | `snap` | Required | The name of the snap associated with the decision | |
 | `app` | Required | The name of the app associated with the decision | |
 | `path` | Required | The path of the resource associated with the decision | |
-| `resource-type` | Required | The device type or path type of the resource being requested | `file`, `directory`, `camera`, `microphone`, etc. |
 | `allow` | Required | Whether access is allowed or denied | `true`, `false` |
 | `lifespan` | Required | How long the decision should be valid | `single`, `session`, `always`, `timeframe` |
 | `permissions` | Required | The list of operations for which the access decision applies | List of [`permission`](#permission) |

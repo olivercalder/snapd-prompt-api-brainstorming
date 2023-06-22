@@ -40,18 +40,6 @@ components:
       description: >
         The path of the object of the prompt request or access decision.
       type: string
-    resource-type:
-      description: >
-        The device type or path type of the object of the prompt request or
-        access decision.
-        For example, a file, directory, or camera.
-      type: string
-      enum:
-        - file
-        - directory
-        - camera
-        - microphone
-        # TODO: add remaining resource types
     permission:
       description: >
         The operation for which a prompt request or access decision applies.
@@ -125,7 +113,6 @@ components:
         - snap
         - app
         - path
-        - resource-type
         - permissions
       properties:
         request-id:
@@ -136,8 +123,6 @@ components:
           $ref: "#/components/schemas/app"
         path:
           $ref: "#/components/schemas/path"
-        resource-type:
-          $ref: "#/components/schemas/resource-type"
         permissions:
           $ref: "#/components/schemas/permissions"
     reply:
@@ -182,7 +167,6 @@ components:
         - snap
         - app
         - path
-        - resource-type
         - allow
         - lifespan
         - permissions
@@ -194,8 +178,6 @@ components:
           $ref: "#/components/schemas/app"
         path:
           $ref: "#/components/schemas/path"
-        resource-type:
-          $ref: "#/components/schemas/resource-type"
         allow:
           $ref: "#/components/schemas/allow"
         lifespan:
