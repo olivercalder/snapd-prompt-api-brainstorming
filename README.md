@@ -32,7 +32,7 @@ When a prompt UI client replies to a prompt request, that reply may result in th
 If the choices specified in the reply are already implied by existing access rules, then no new access rule is created (this is referred to as *consolidation*).
 If a new access rule is created, any existing access rules which are *more specific* than the new rule (that is, for a given permission, the new rule implies the existing rule) will be *pruned*: any permissions (read, write, execute, etc.) common to both the new and existing rule will be removed from the latter; if the final permission is removed from an existing rule, that rule is deleted.
 
-Additionally, access rules can be [added directly](#post-v2promptingrules) without there being a previous prompt request, and access rules can be [modified](#post-v2promptingrulesid) or [deleted](#delete-v2promptingrulesid) manually as well.
+Additionally, access rules can be [added directly](#post-v2access-controlrules) without there being a previous prompt request, and access rules can be [modified](#post-v2access-controlrulesid) or [deleted](#delete-v2access-controlrulesid) manually as well.
 This allows an application like GNOME control center to manage access rules.
 
 Thus, there is a relationship, but not a direct mapping, between prompt requests and access rules.
@@ -47,8 +47,8 @@ Thus, for all endpoints, snapd only works with the prompt requests or access rul
 
 - [`/v2/prompting/requests`](#v2promptingrequests)
 - [`/v2/prompting/requests/{id}`](#v2promptingrequestsid)
-- [`/v2/prompting/rules`](#v2promptingrules)
-- [`/v2/prompting/rules/{id}`](#v2promptingrulesid)
+- [`/v2/access-control/rules`](#v2access-controlrules)
+- [`/v2/access-control/rules/{id}`](#v2access-controlrulesid)
 
 ### `/v2/prompting/requests`
 
@@ -108,13 +108,13 @@ The [`reply`](#reply) object containing the answer from the UI client for the gi
 
 The [`changed-rules`](#changed-rules) which resulted from submitting the response --- see there for more details.
 
-### `/v2/prompting/rules`
+### `/v2/access-control/rules`
 
 Actions regarding stored access rules.
 
 This endpoint is designed to be used primarily by "control panel" applications which can configure access permissions directly without being prompted.
 
-#### `GET /v2/prompting/rules`
+#### `GET /v2/access-control/rules`
 
 Get existing access rules.
 
@@ -134,7 +134,7 @@ n/a
 
 List of [`rule`](#rule) entries.
 
-#### `POST /v2/prompting/rules`
+#### `POST /v2/access-control/rules`
 
 Create a new access rule.
 
@@ -146,7 +146,7 @@ The new [`rule`](#rule) to add (technically `rule-contents`, which omits `id` an
 
 The [`changed-rules`](#changed-rules) which resulted from adding the new rule --- see there for more details.
 
-#### `DELETE /v2/prompting/rules`
+#### `DELETE /v2/access-control/rules`
 
 Delete stored access rules.
 
@@ -164,11 +164,11 @@ n/a
 
 List of [`rule`](#rule) entries which were deleted.
 
-### `/v2/prompting/rules/{id}`
+### `/v2/access-control/rules/{id}`
 
 Actions regarding the saved access rule with the given ID.
 
-#### `GET /v2/prompting/rules/{id}`
+#### `GET /v2/access-control/rules/{id}`
 
 Get the access rule with the given ID.
 
@@ -184,7 +184,7 @@ n/a
 
 The [`rule`](#rule) information associated with the given ID.
 
-#### `POST /v2/prompting/rules/{id}`
+#### `POST /v2/access-control/rules/{id}`
 
 Modify the stored rule with the given ID.
 
@@ -202,7 +202,7 @@ Since a `reply` object is used as the payload, the `allow` (allow/deny), `lifesp
 
 The [`changed-rules`](#changed-rules) which resulted from modifying the rule --- see there for more details.
 
-#### `DELETE /v2/prompting/rules/{id}`
+#### `DELETE /v2/access-control/rules/{id}`
 
 Delete the stored access rule with the given ID.
 
@@ -260,7 +260,7 @@ When responding to a request or attempting to add a new rule directly, the resul
 If a new rule is added, previous rules may be *pruned* by removing particular operations which have been overruled by the new rule.
 Those rules will appear in the `modified` list.
 
-If all operations are removed from an existing rule, that rule is deleted by removing it from the rules index (that is, it will no longer be included in responses from the `/v2/prompting/rules` endpoint).
+If all operations are removed from an existing rule, that rule is deleted by removing it from the rules index (that is, it will no longer be included in responses from the `/v2/access-control/rules` endpoint).
 Any such rule will appear in the `deleted` list.
 
 | Field | Required/Optional | Description | Options |

@@ -324,7 +324,7 @@ paths:
         "404":
           description: >
             No request found with the given ID, ignoring reply.
-  /v2/prompting/rules:
+  /v2/access-control/rules:
     GET:
       operationId: getRules
       summary: Get existing access rules
@@ -468,7 +468,7 @@ paths:
         "404":
           description: >
             Failed to delete access rules from the rule database.
-  /v2/prompting/rules/{id}:
+  /v2/access-control/rules/{id}:
     GET:
       operationId: getRuleWithId
       summary: Get a particular access rule
