@@ -154,7 +154,6 @@ Delete stored access rules.
 
 - `snap` (required): Only delete stored rules associated with the given snap.
 - `app`: Only delete stored rules associated with the given app within the given snap.
-- `confirm-delete`: A boolean parameter which must be included in the HTTP request in order to confirm that the caller wishes to remove multiple rules at once.
 
 ##### Request Body
 
