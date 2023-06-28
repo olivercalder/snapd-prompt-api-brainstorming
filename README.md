@@ -3,7 +3,7 @@
 Exploring possible designs for a snapd prompting API.
 
 This is meant to be an extension of the existing [snapd REST API](https://snapcraft.io/docs/snapd-rest-api) to enable apparmor prompting support in snapd.
-In particular, this API allows prompt UI clients to receive and respond to resource access requests, and allows permission control panel applications to view, add, modify, and delete rules about resource access.
+In particular, this API allows prompt UI clients to receive and reply to prompt requests, and allows permission control panel applications to view, add, modify, and delete access rules.
 
 ### How to Use
 
@@ -11,7 +11,7 @@ To view and interact with the API, run
 ```
 ./sanitize_openapi.sh
 ```
-and copy the output into [https://editor-next.swagger.io/](https://editor-next.swagger.io/)
+and copy the output into [https://editor-next.swagger.io/](https://editor-next.swagger.io/).
 
 The following description is designed to be a condensed summary of the API.
 To explore the complete API, it is recommended to use [https://editor-next.swagger.io/](https://editor-next.swagger.io/) as described above, or an equivalent tool.
@@ -20,148 +20,202 @@ To explore the complete API, it is recommended to use [https://editor-next.swagg
 
 The API has two primary goals:
 
-1. Allow prompt UI clients to receive and respond to resource access requests
-2. Allow resource access rules to be retrieved, added, modified, or deleted by permission control panel applications
+1. Allow prompt UI clients to receive and reply to prompt requests
+2. Allow access rules to be retrieved, added, modified, or deleted by permission control panel applications
+
+These correspond to two related but distinct concepts:
+
+1. *Prompt requests*: used in communication between snapd and a prompt UI client, which are discarded once a reply is received
+2. *Access rules*: used internally and in communication between snapd and a control center application, and may be added, modified, or deleted over time
+
+When a prompt UI client replies to a prompt request, that reply may result in the creation of a new access rule which is then used to handle future requests.
+If the choices specified in the reply are already implied by existing access rules, then no new access rule is created (this is referred to as *consolidation*).
+If a new access rule is created, any existing access rules which are *more specific* than the new rule (that is, for a given permission, the new rule implies the existing rule) will be *pruned*: any permissions (read, write, execute, etc.) common to both the new and existing rule will be removed from the latter; if the final permission is removed from an existing rule, that rule is deleted.
+
+Additionally, access rules can be [added directly](#post-v2access-controlrules) without there being a previous prompt request, and access rules can be [modified](#post-v2access-controlrulesid) or [deleted](#delete-v2access-controlrulesid) manually as well.
+This allows an application like GNOME control center to manage access rules.
+
+Thus, there is a relationship, but not a direct mapping, between prompt requests and access rules.
+Both concepts use unique IDs to identify requests and rules, respectively, but those IDs are distinct between the two: an ID is used to identify prompt requests to the prompt UI client, and a new ID is assigned to an access rule by snapd if/when a corresponding rule is added to the database.
+
+### Note on users and UIDs
+
+Snapd is given the subject UID of any access request it receives from the kernel/apparmor, and it can identify the UID of any client connecting to an endpoint.
+Thus, for all endpoints, snapd only works with the prompt requests or access rules corresponding to the UID of the connected client.
 
 ## Endpoints
 
 - [`/v2/prompting/requests`](#v2promptingrequests)
 - [`/v2/prompting/requests/{id}`](#v2promptingrequestsid)
-- [`/v2/prompting/decisions`](#v2promptingdecisions)
-- [`/v2/prompting/decisions/{id}`](#v2promptingdecisionsid)
+- [`/v2/access-control/rules`](#v2access-controlrules)
+- [`/v2/access-control/rules/{id}`](#v2access-controlrulesid)
 
 ### `/v2/prompting/requests`
 
-Actions related resource access requests.
+Actions related prompt requests.
 
-This endpoint is designed to be used by prompt UI clients whose responsibility it is to receive and respond to resource access requests.
+This endpoint is designed to be used by prompt UI clients whose responsibility it is to receive and reply to access requests from snapd (which correspond to requests from the kernel to snapd).
 
 #### `GET /v2/prompting/requests`
 
-Retrieve all outstanding requests.
+Retrieve all prompt requests for which a reply has not yet been received.
 
 ##### Parameters
 
-- `follow`: Open a long-lived connection using ["json-seq"](https://docs.google.com/document/d/1vTq0iGVypVEeZhm8y1oTHLTRx8sOXDLOJjU-t89FhTc)
+- `follow`: Open a long-lived connection using ["json-seq"](https://docs.google.com/document/d/1vTq0iGVypVEeZhm8y1oTHLTRx8sOXDLOJjU-t89FhTc) so that whenever snapd creates a new prompt request, it is sent immediately along this open connection.
 
-##### Returns
+##### Request Body
 
-List of [`request`](#request)s.
+n/a
+
+##### Response Body
+
+List of [`request`](#request) objects.
 
 ### `/v2/prompting/requests/{id}`
 
-Actions for a particular resource access request.
+Actions for a particular prompt request.
 
 #### `GET /v2/prompting/requests/{id}`
 
-Retrieve the resource access request with the given ID.
+Retrieve the prompt request with the given ID.
 
 ##### Parameters
 
-- `id`: The unique identifier of the request
+- `id`: The unique identifier of the prompt request.
 
-##### Returns
+##### Request Body
 
-The corresponding [`request`](#request) information.
+n/a
+
+##### Response Body
+
+The [`request`](#request) object corresponding to the given ID.
 
 #### `POST /v2/prompting/requests/{id}`
 
-Respond to the resource access request with the given ID.
+Reply to the access request with the given ID.
 
 ##### Parameters
 
-- `id`: The unique identifier of the request
-- `response`: The [`response`](#response) details from the UI client for the given request
+- `id`: The unique identifier of the prompt request.
 
-##### Returns
+##### Request Body
 
-The [`changed-decisions`](#changed-decisions) which resulted from submitting the response --- see there for more details.
+The [`reply`](#reply) object containing the answer from the UI client for the given request.
 
-### `/v2/prompting/decisions`
+##### Response Body
 
-Actions regarding stored decisions.
+The [`changed-rules`](#changed-rules) which resulted from submitting the response --- see there for more details.
 
-This endpoint is designed to be used primarily by "control panel" applications which can configure permissions directly without being prompted.
+### `/v2/access-control/rules`
 
-#### `GET /v2/prompting/decisions`
+Actions regarding stored access rules.
 
-Get existing resource access decisions.
+This endpoint is designed to be used primarily by "control panel" applications which can configure access permissions directly without being prompted.
 
-##### Parameters
+#### `GET /v2/access-control/rules`
 
-- `follow`: Open a long-lived connection using ["json-seq"](https://docs.google.com/document/d/1vTq0iGVypVEeZhm8y1oTHLTRx8sOXDLOJjU-t89FhTc)
-- `snap`: Only get stored decisions associated with the given snap
-- `app`: Only get stored decisions associated with the given app (requires the `snap` parameter as well)
-
-##### Returns
-
-List of [`decision`](#decision) entries.
-
-#### `POST /v2/prompting/decisions`
-
-Create a new resource access decision.
+Get existing access rules.
 
 ##### Parameters
 
-- `decision`: The new [`decision`](#decision) to add (omit `id` and `timestamp`)
+- `snap`: Only get stored access rules associated with the given snap.
+- `app`: Only get stored access rules associated with the given app within the given snap.
+  - If the `app` parameter is included without the `snap` parameter, an error is returned.
+- `follow`: Open a long-lived connection using ["json-seq"](https://docs.google.com/document/d/1vTq0iGVypVEeZhm8y1oTHLTRx8sOXDLOJjU-t89FhTc) so that whenever an access rule is added, modified, or deleted, it is sent immediately along this open connection.
+  - If the `follow` parameter is included without the `snap` parameter, an error is returned.
 
-##### Returns
+##### Request Body
 
-The [`changed-decisions`](#changed-decisions) which resulted from adding the new decision --- see there for more details.
+n/a
 
-#### `DELETE /v2/prompting/decisions`
+##### Response Body
 
-Delete stored resource access decisions.
+List of [`rule`](#rule) entries.
 
-##### Parameters
+#### `POST /v2/access-control/rules`
 
-- `snap`: Only delete stored decisions associated with the given snap
-- `app`: Only delete stored decisions associated with the given app (requires the `snap` parameter as well)
+Create a new access rule.
 
-##### Returns
+##### Request Body
 
-List of [`decision`](#decision) entries which were deleted.
+The new [`rule`](#rule) to add (technically `rule-contents`, which omits `id` and `timestamp`).
 
-### `/v2/prompting/decisions/{id}`
+##### Response Body
 
-Actions associated with a particular saved resource access decision.
+The [`changed-rules`](#changed-rules) which resulted from adding the new rule --- see there for more details.
 
-#### `GET /v2/prompting/decisions/{id}`
+#### `DELETE /v2/access-control/rules`
 
-Get the stored decision with the given ID.
-
-##### Parameters
-
-- `id`: The unique identifier of the stored decision
-
-##### Returns
-
-The [`decision`](#decision) information associated with the given ID.
-
-#### `POST /v2/prompting/decisions/{id}`
-
-Modify the stored decision with the given ID.
+Delete stored access rules.
 
 ##### Parameters
 
-- `id`: The unique identifier of the stored decision
-- `response`: The updated [`response`](#response) information to store with the decision
+- `snap` (required): Only delete stored rules associated with the given snap.
+- `app`: Only delete stored rules associated with the given app within the given snap.
 
-##### Returns
+##### Request Body
 
-The [`changed-decisions`](#changed-decisions) which resulted from modifying the decision --- see there for more details.
+n/a
 
-#### `DELETE /v2/prompting/decisions/{id}`
+##### Response Body
 
-Delete the stored decision with the given ID.
+List of [`rule`](#rule) entries which were deleted.
+
+### `/v2/access-control/rules/{id}`
+
+Actions regarding the saved access rule with the given ID.
+
+#### `GET /v2/access-control/rules/{id}`
+
+Get the access rule with the given ID.
 
 ##### Parameters
 
-- `id`: The unique identifier of the stored decision
+- `id`: The unique identifier of the stored access rule.
 
-##### Returns
+##### Request Body
 
-The [`decision`](#decision) which was deleted.
+n/a
+
+##### Response Body
+
+The [`rule`](#rule) information associated with the given ID.
+
+#### `POST /v2/access-control/rules/{id}`
+
+Modify the stored rule with the given ID.
+
+##### Parameters
+
+- `id`: The unique identifier of the stored rule
+
+##### Request Body
+
+The updated [`reply`](#reply) information to replace that which was previously associated with the rule.
+
+Since a `reply` object is used as the payload, the `allow` (allow/deny), `lifespan`, `permissions` (list of operations like `read`, `write`, etc.), and `path-scope` (file, directory, subdirectories) fields of the stored access rule can be modified.
+
+##### Response Body
+
+The [`changed-rules`](#changed-rules) which resulted from modifying the rule --- see there for more details.
+
+#### `DELETE /v2/access-control/rules/{id}`
+
+Delete the stored access rule with the given ID.
+
+##### Parameters
+
+- `id`: The unique identifier of the stored rule.
+
+##### Request Body
+
+n/a
+
+##### Response Body
+
+The [`rule`](#rule) information which was deleted.
 
 ## Notable Schemas
 
@@ -169,57 +223,54 @@ The [`decision`](#decision) which was deleted.
 
 | Field | Required/Optional | Description | Options |
 | -- | -- | ---------------- | ---- |
-| `id` | Required | The unique identifier of the request | |
+| `request-id` | Required | The unique identifier of the request | |
 | `snap` | Required | The name of the snap which triggered the request | |
 | `app` | Required | The name of the app which triggered the request | |
 | `path` | Required | The path of the resource being requested | |
-| `resource-type` | Required | The device type or path type of the resource being requested | `file`, `directory`, `camera`, `microphone`, etc. |
 | `permissions` | Required | The permissions being requested | List of [`permission`](#permission) |
 
-
-### `response`
-
-| Field | Required/Optional | Description | Options |
-| -- | -- | ---------------- | ---- |
-| `allow` | Required | Whether access is allowed or denied | `true`, `false`
-| `duration` | Required | How long the response decision should be valid | `single`, `session`, `always`, `timeframe` |
-| `permissions` | Optional | A list of operations for which a decision applies --- the permissions in the original request are assumed | List of [`permission`](#permission) |
-| `path-access` | Optional | The paths for which to apply the decision | `file`, `directory`, `subdirectories` |
-
-### `decision`
+### `reply`
 
 | Field | Required/Optional | Description | Options |
 | -- | -- | ---------------- | ---- |
-| `id` | Required | The unique identifier of the decision | |
-| `timestamp` | Required | The timestamp at which the decision was created or last modified | |
-| `snap` | Required | The name of the snap associated with the decision | |
-| `app` | Required | The name of the app associated with the decision | |
-| `path` | Required | The path of the resource associated with the decision | |
-| `resource-type` | Required | The device type or path type of the resource being requested | `file`, `directory`, `camera`, `microphone`, etc. |
 | `allow` | Required | Whether access is allowed or denied | `true`, `false` |
-| `duration` | Required | How long the decision should be valid | `single`, `session`, `always`, `timeframe` |
-| `permissions` | Required | The list of operations for which the decision applies | List of [`permission`](#permission) |
-| `path-access` | Required | The paths for which to apply the decision | `file`, `directory`, `subdirectories` |
+| `lifespan` | Required | How long the reply should be valid | `single`, `session`, `always`, `timeframe` |
+| `permissions` | Optional | A list of operations for which the access applies --- the permissions in the original request are assumed | List of [`permission`](#permission) |
+| `path-scope` | Optional | The paths for which the access applies | `file`, `directory`, `subdirectories` |
 
-### `changed-decisions`
-
-When responding to a request or attempting to add a new decision directly, the resulting new decision might be implied by previous decisions, in which case it will not be added and the `new` field will be empty.
-
-If a new decision is added, previous decisions may be "pruned" by removing particular operations which have been overruled by the new decision.
-Those decisions will appear in the `modified` list.
-
-If all operations are removed from an existing decision, that decision is deleted by removing it from the decisions index (that is, it will no longer be included in responses from the `/v2/prompting/decisions` endpoint).
-Any such decision will appear in the `deleted` list.
+### `rule`
 
 | Field | Required/Optional | Description | Options |
 | -- | -- | ---------------- | ---- |
-| `new` | Optional | New decisions which were added as a result of some change | List of [`decision`](#decision) |
-| `modified` | Optional | Decisions which were modified as a result of some change | List of [`decision`](#decision) |
-| `deleted` | Optional | Decisions which were deleted as a result of some change | List of [`decision`](#decision) |
+| `rule-id` | Required | The unique identifier of the rule | |
+| `timestamp` | Required | The timestamp at which the rule was created or last modified | |
+| `snap` | Required | The name of the snap associated with the rule | |
+| `app` | Required | The name of the app associated with the rule | |
+| `path` | Required | The path of the resource associated with the rule | |
+| `allow` | Required | Whether access is allowed or denied | `true`, `false` |
+| `lifespan` | Required | How long the rule should be valid | `single`, `session`, `always`, `timeframe` |
+| `permissions` | Required | The list of operations for which the access rule applies | List of [`permission`](#permission) |
+| `path-scope` | Required | The paths for which the access rule applies | `file`, `directory`, `subdirectories` |
+
+### `changed-rules`
+
+When responding to a request or attempting to add a new rule directly, the resulting new rule might be implied by previous rules, in which case it will not be added and the `new` field will be empty.
+
+If a new rule is added, previous rules may be *pruned* by removing particular operations which have been overruled by the new rule.
+Those rules will appear in the `modified` list.
+
+If all operations are removed from an existing rule, that rule is deleted by removing it from the rules index (that is, it will no longer be included in responses from the `/v2/access-control/rules` endpoint).
+Any such rule will appear in the `deleted` list.
+
+| Field | Required/Optional | Description | Options |
+| -- | -- | ---------------- | ---- |
+| `new` | Optional | New access rules which were added as a result of some change | List of [`rule`](#rule) |
+| `modified` | Optional | Access rules which were modified as a result of some change | List of [`rule`](#rule) |
+| `deleted` | Optional | Access rules which were deleted as a result of some change | List of [`rule`](#rule) |
 
 ### `permission`
 
-The operations for which a particular request or decision applies.
+The operations for which a particular request or rule applies.
 
 - `execute`
 - `write`

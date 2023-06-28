@@ -13,41 +13,36 @@ components:
       description: >
         Whether or not to open a long-lived connection.
       type: boolean
-    id:
+    request-id:
       description: >
-        The unique ID of a request.
+        The unique ID of a prompt request.
+      type: string
+    rule-id:
+      description: >
+        The unique ID of an access rule.
       type: string
     timestamp:
       description: >
-        The timestamp at which a request was created or last modified.
+        The timestamp at which an access rule was created or last modified.
       type: string
       format: date-time
     snap:
       description: >
-        The name of the snap which triggered the access request.
+        The name of the snap which corresponds to the prompt request or access
+        rule.
       type: string
     app:
       description: >
-        The name of the app which triggered the access request.
+        The name of the app which corresponds to the prompt request or access
+        rule.
       type: string
     path:
       description: >
-        The path of the resource being requested.
+        The path of the object of the prompt request or access rule.
       type: string
-    resource-type:
-      description: >
-        The device type or path type of the resource being requested.
-        For example, a file, directory, or camera.
-      type: string
-      enum:
-        - file
-        - directory
-        - camera
-        - microphone
-        # TODO: add remaining resource types
     permission:
       description: >
-        The type of operation for which to apply a decision about access to a resource.
+        The operation for which a prompt request or access rule applies.
       type: string
       enum:
         - execute                # AA_MAY_EXEC, process may execute another program
@@ -72,11 +67,11 @@ components:
         - change-profile         # AA_MAY_CHANGE_PROFILE, process may change the apparmor profile on demand
     allow:
       description: >
-        Decision to allow or deny access to the given resource.
+        Whether to allow or deny access.
       type: boolean
-    duration:
+    lifespan:
       description: >
-        The duration for which the response decision should be valid.
+        The lifespan for which the access rule should be valid.
       type: string
       enum:
         - single
@@ -85,14 +80,15 @@ components:
         - timeframe # TODO: how to store the timeframe?
     permissions:
       description: >
-        The list of permissions for which a decision applies.
+        The list of permissions for which a prompt request or access rule
+        applies.
       type: array
       items:
         $ref: "#/components/schemas/permission"
-    path-access:
+    path-scope:
       description: >
-        Apply the same decision on either the path itself, all other files in
-        the directory of the requested path, or all other files in the path's
+        Apply the same rule on either the path itself, all other files in the
+        directory of the requested path, or all other files in the path's
         directory and all subdirectories.
 
         The subdirectories value is a superset of the the directory value.
@@ -109,74 +105,72 @@ components:
         - subdirectories
     request:
       description: >
-        A request to access a particular resource.
+        An outstanding prompt request for the given snap and app to access
+        the given path with the given permissions.
       type: object
       required:
-        - id
+        - request-id
         - snap
         - app
         - path
-        - resource-type
         - permissions
       properties:
-        id:
-          $ref: "#/components/schemas/id"
+        request-id:
+          $ref: "#/components/schemas/request-id"
         snap:
           $ref: "#/components/schemas/snap"
         app:
           $ref: "#/components/schemas/app"
         path:
           $ref: "#/components/schemas/path"
-        resource-type:
-          $ref: "#/components/schemas/resource-type"
         permissions:
           $ref: "#/components/schemas/permissions"
-    response:
+    reply:
       description: >
-        A response to a resource access request.
+        A reply to a prompt request.
       type: object
       required:
         - allow
-        - duration
+        - lifespan
       properties:
         allow:
           $ref: "#/components/schemas/allow"
-        duration:
-          $ref: "#/components/schemas/duration"
+        lifespan:
+          $ref: "#/components/schemas/lifespan"
         permissions:
           $ref: "#/components/schemas/permissions"
-        path-access:
-          $ref: "#/components/schemas/path-access"
+        path-scope:
+          $ref: "#/components/schemas/path-scope"
       # store-parent:
       #   description: >
       #     Store the parent of the requested path in the database,
       #     rather than the path itself.
       #   type: boolean
-    decision-metadata:
+    rule-metadata:
       description: >
-        The internal metadata for a resource access request decision.
+        The metadata for an access rule, including the unique rule ID and the
+        timestamp at which that rule was created or modified.
       type: object
       required:
-        - id
+        - rule-id
         - timestamp
       properties:
-        id:
-          $ref: "#/components/schemas/id"
+        rule-id:
+          $ref: "#/components/schemas/rule-id"
         timestamp:
           $ref: "#/components/schemas/timestamp"
-    decision-contents:
+    rule-contents:
       description: >
-        A resource access request decision.
+        The body of an access rule.
       type: object
       required:
         - snap
         - app
         - path
-        - resource-type
         - allow
-        - duration
+        - lifespan
         - permissions
-        - path-access
+        - path-scope
       properties:
         snap:
           $ref: "#/components/schemas/snap"
@@ -184,328 +178,356 @@ components:
           $ref: "#/components/schemas/app"
         path:
           $ref: "#/components/schemas/path"
-        resource-type:
-          $ref: "#/components/schemas/resource-type"
         allow:
           $ref: "#/components/schemas/allow"
-        duration:
-          $ref: "#/components/schemas/duration"
+        lifespan:
+          $ref: "#/components/schemas/lifespan"
         permissions:
           $ref: "#/components/schemas/permissions"
-        path-access:
-          $ref: "#/components/schemas/path-access"
-    decision:
+        path-scope:
+          $ref: "#/components/schemas/path-scope"
+    rule:
       description: >
-        A saved resource access request decision with a corresponding ID and
-        timestamp.
+        A saved access rule with a corresponding ID and timestamp.
       allOf:
-        - $ref: "#/components/schemas/decision-metadata"
-        - $ref: "#/components/schemas/decision-contents"
-    stored-decisions:
+        - $ref: "#/components/schemas/rule-metadata"
+        - $ref: "#/components/schemas/rule-contents"
+    changed-rules:
       description: >
-        A list of resource access request decisions.
-      type: array
-      items:
-        $ref: "#/components/schemas/decision"
-    changed-decisions:
-      description: >
-        The resource access request decisions which have been created,
-        modified, or deleted as a result of a change.
+        The access rules which have been created, modified, or deleted as
+        the result of a change.
       type: object
       properties:
         new:
           description: >
-            The resource access request decisions which have been created.
+            The access rules which have been created.
           type: array
           items:
-            $ref: "#/components/schemas/decision"
+            $ref: "#/components/schemas/rule"
         modified:
           description: >
-            The resource access request decisions which have been modified.
+            The access rules which have been modified.
           type: array
           items:
-            $ref: "#/components/schemas/decision"
+            $ref: "#/components/schemas/rule"
         deleted:
           description: >
-            The resource access request decisions which have been deleted.
+            The access rules which have been deleted.
           type: array
           items:
-            $ref: "#/components/schemas/decision"
+            $ref: "#/components/schemas/rule"
   parameters:
-    follow-param:
+    request-id-param:
       description: >
-        Open a long-lived connection to be notified of future requests.
-      name: follow
-      in: query
-      required: false
-      schema:
-        $ref: "#/components/schemas/follow"
-    snap-param:
-      description: >
-        The name of the snap for which to get resource access request
-        decisions.
-      name: snap
-      in: query
-      required: false
-      schema:
-        $ref: "#/components/schemas/snap"
-    app-param:
-      description: >
-        The name of the app for which to get resource access request decisions.
-      name: app
-      in: query
-      required: false
-      schema:
-        $ref: "#/components/schemas/app"
-    id-param:
-      description: >
-        The ID of the resource access request.
+        The ID of the prompt request.
       name: id
       in: path
       required: true
       schema:
-        $ref: "#/components/schemas/id"
-    response-param:
+        $ref: "#/components/schemas/request-id"
+    rule-id-param:
       description: >
-        A response to the given resource access request.
-      name: response
-      in: query
+        The ID of the access rule.
+      name: id
+      in: path
       required: true
       schema:
-        $ref: "#/components/schemas/response"
-    decision-param:
-      description: >
-        The contents of the resource access request decision.
-      name: decision
-      in: query
-      required: true
-      schema:
-        $ref: "#/components/schemas/decision-contents"
+        $ref: "#/components/schemas/rule-id"
 tags:
   - name: requests
-    description: Methods related to outstanding resource access requests.
-  - name: decisions
-    description: Methods related to previously-stored resource access request decisions.
+    description: Methods related to outstanding prompt requests.
+  - name: rules
+    description: Methods related to stored access rules.
 paths:
   /v2/prompting/requests:
     GET:
       operationId: getRequests
-      summary: Retrieve all resource access requests
+      summary: Retrieve all prompt requests
       description: >
-        Retrieve all outstanding resource access requests.
+        Retrieve all outstanding prompt requests.
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/follow-param"
+        - name: follow
+          in: query
+          description: >
+            Open a long-lived connection using "json-seq" to be notified of
+            any future prompt requests.
+          required: false
+          schema:
+            $ref: "#/components/schemas/follow"
       responses:
         "200":
           description: >
-            Successfully retrieved all pending resource access requests.
+            Successfully retrieved all outstanding prompt requests.
           content:
             application/json:
               schema:
                 description: >
-                  The resource access requests which are currently pending.
+                  The prompt requests which are currently pending.
                 type: array
                 items:
                   $ref: "#/components/schemas/request"
         "404":
           description: >
-            Failed to retrieve resource access requests.
+            Failed to retrieve prompt requests.
   /v2/prompting/requests/{id}:
     GET:
       operationId: getRequestWithId
-      summary: Retrieve the request information for a particular request ID
+      summary: Retrieve the information for a particular prompt request
       description: >
-        Retrieve the resource access request information corresponding to the
-        given ID.
+        Retrieve the prompt request information corresponding to the given ID.
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/request-id-param"
       responses:
         "200":
           description: >
-            Successfully retrieved the request information for the resource
-            access request with the given ID.
+            Successfully retrieved the request information for the prompt
+            request with the given ID.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/request"
         "404":
           description: >
-            No resource access request found with the given ID.
+            No prompt request found with the given ID.
     POST:
-      operationId: respondToRequestWithId
-      summary: Respond to the given resource access request
+      operationId: replyToRequestWithId
+      summary: Reply to the given prompt request
       description: >
-        Respond to the given resource access request, providing information
-        collected by prompting the user for a decision about access to the
-        corresponding resource.
+        Respond to the given prompt request, providing information collected
+        by prompting the user for a decision about access to the object of
+        the request.
       tags:
         - requests
       parameters:
-        - $ref: "#/components/parameters/id-param"
-        - $ref: "#/components/parameters/response-param"
+        - $ref: "#/components/parameters/request-id-param"
+      requestBody:
+        description: >
+          The contents of the reply to the prompt request.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/reply"
       responses:
         "200":
           description: >
-            Successfully received the response for the request with the given ID.
+            Successfully received the reply for the prompt request with the
+            given ID.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/changed-decisions"
+                $ref: "#/components/schemas/changed-rules"
         "404":
           description: >
-            No request found with the given ID, ignoring response.
-  /v2/prompting/decisions:
+            No request found with the given ID, ignoring reply.
+  /v2/access-control/rules:
     GET:
-      operationId: getDecisions
-      summary: Get existing resource access request decisions
+      operationId: getRules
+      summary: Get existing access rules
       description: >
-        Retrieve existing resource access request decisions from the decision
+        Retrieve existing access rules from the rule database.
+
+        If the snap parameter is given, only retrieve rules for that snap.
+
+        If the app parameter is given along with the snap parameter, only
+        retrieve rules for that app within the given snap.
+
+        The follow and the app parameters are both ignored if the snap
+        parameter is not given.
+      tags:
+        - rules
+      parameters:
+        - name: snap
+          in: query
+          description: >
+            The snap for which to retrieve access rules.
+          required: false
+          schema:
+            $ref: "#/components/schemas/snap"
+        - name: app
+          in: query
+          description: >
+            The app within the given snap for which to retrieve access rules.
+
+            Returns an error if the `app` parameter is given without the `snap`
+            parameter also being given.
+          required: false
+          schema:
+            $ref: "#/components/schemas/app"
+        - name: follow
+          in: query
+          description: >
+            Open a long-lived connection using "json-seq" to be notified of
+            future changes to stored rules.
+
+            Returns an error if the `follow` parameter is given without `snap`
+            parameter also being given.
+          required: false
+          schema:
+            $ref: "#/components/schemas/follow"
+      responses:
+        "200":
+          description: >
+            Successfully retrieved existing access rules from the rule
+            database.
+          content:
+            application/json:
+              schema:
+                description: >
+                  The existing access rules.
+                type: array
+                items:
+                  $ref: "#/components/schemas/rule"
+        "400":
+          description: >
+            The `snap` parameter is required when using the `app` or `follow`
+            parameters.
+        "404":
+          description: >
+            Failed to retrieve existing access rules from the rule database.
+    POST:
+      operationId: addRule
+      summary: Create a new access rule
+      description: >
+        Directly create a new access rule without having previously been
+        prompted with a prompt request.
+      tags:
+        - rules
+      requestBody:
+        description: >
+          The contents of the access rule to be added.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/rule-contents"
+      responses:
+        "200":
+          description: >
+            Successfully added the given access rule.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/changed-rules"
+        "404":
+          description: >
+            Failed to create the given access rule.
+    DELETE:
+      operationId: deleteRules
+      summary: Delete existing access rules
+      description: >
+        Delete previously-stored access rules for the given snap from the rule
         database.
-        If the snap parameter is given, only retrieve resource access requests
-        for that snap.
-        If the app parameter is given along with the snap parameter, only
-        retrieve resource access requests for that app within the given snap.
-        The app parameter is ignored if the snap parameter is not given.
+
+        If the `app` parameter is given, only delete rules for that app within
+        the given snap.
       tags:
-        - decisions
+        - rules
       parameters:
-        - $ref: "#/components/parameters/follow-param"
-        - $ref: "#/components/parameters/snap-param"
-        - $ref: "#/components/parameters/app-param"
+        - name: snap
+          in: query
+          description: >
+            The snap for which to delete access rules.
+          required: true
+          schema:
+            $ref: "#/components/schemas/snap"
+        - name: app
+          in: query
+          description: >
+            The app within the given snap for which to delete access rules.
+          required: false
+          schema:
+            $ref: "#/components/schemas/app"
       responses:
         "200":
           description: >
-            Successfully retrieved existing resource access request decisions
-            from the decision database.
+            Successfully deleted access rules.
+            All deleted rules can be found in the response content.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/stored-decisions"
+                description: >
+                  The access rules which were deleted.
+                type: array
+                items:
+                  $ref: "#/components/schemas/rule"
         "404":
           description: >
-            Failed to retrieve existing resource access request decisions from
-            the decision database.
-    POST:
-      operationId: addDecision
-      summary: Create a new resource access request decision
-      description: >
-        Directly create a new resource access request rule without having
-        previously been prompted by a resource access request.
-      tags:
-        - decisions
-      parameters:
-        - $ref: "#/components/parameters/decision-param"
-      responses:
-        "200":
-          description: >
-            Successfully added the given resource access request decision.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/changed-decisions"
-        "404":
-          description: >
-            Failed to create the given resource access request decision.
-    DELETE:
-      operationId: deleteDecisions
-      summary: Delete resource access request decisions
-      description: >
-        Delete previously-stored resource access request decisions from
-        the decision database.
-        If the snap parameter is given, only delete resource access requests
-        for that snap.
-        If the app parameter is given along with the snap parameter, only
-        delete resource access requests for that app within the given snap.
-        The app parameter is ignored if the snap parameter is not given.
-      tags:
-        - decisions
-      parameters:
-        - $ref: "#/components/parameters/snap-param"
-        - $ref: "#/components/parameters/app-param"
-      responses:
-        "200":
-          description: >
-            Successfully deleted resource access request decisions.
-            All deleted decisions can be found in the response content.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/stored-decisions"
-        "404":
-          description: >
-            Failed to delete resource access request decisions from the
-            decision database.
-  /v2/prompting/decisions/{id}:
+            Failed to delete access rules from the rule database.
+  /v2/access-control/rules/{id}:
     GET:
-      operationId: getDecisionWithId
-      summary: Get a particular resource access request decision
+      operationId: getRuleWithId
+      summary: Get a particular access rule
       description: >
-        Get the resource access request decision corresponding to the given
-        request ID.
+        Get the access rule corresponding to the given rule ID.
       tags:
-        - decisions
+        - rules
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/rule-id-param"
       responses:
         "200":
           description: >
-            Successfully retrieved the resource access request decision with
-            the given ID.
+            Successfully retrieved the access rule with the given ID.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/decision"
+                $ref: "#/components/schemas/rule"
         "404":
           description: >
-            No resource access request decision found with the given ID.
+            No access rule found with the given ID.
     POST:
-      operationId: modifyDecisionWithId
-      summary: Modify an existing resource access request decision
+      operationId: modifyRuleWithId
+      summary: Modify an existing access rule
       description: >
-        Modify the resource access request response corresponding to the given
-        request ID.
+        Modify the access rule corresponding to the given request ID.
       tags:
-        - decisions
+        - rules
       parameters:
-        - $ref: "#/components/parameters/id-param"
-        - $ref: "#/components/parameters/response-param"
+        - $ref: "#/components/parameters/rule-id-param"
+      requestBody:
+        description: >
+          The updated contents of the reply for the given access rule.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/reply"
       responses:
         "200":
           description: >
-            Successfully modified the resource access request decision with
-            the given ID.
+            Successfully modified the access rule with the given ID.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/changed-decisions"
+                $ref: "#/components/schemas/changed-rules"
         "404":
           description: >
-            No resource access request decision found with the given ID.
-            Ignore the given response information.
+            No access rule found with the given ID.
+            Ignored the given reply information.
     DELETE:
-      operationId: deleteDecisionWithId
-      summary: Delete a resource access request decision.
+      operationId: deleteRuleWithId
+      summary: Delete an access rule.
       description: >
-        Delete the resource access request decision with the given ID.
+        Delete the access rule with the given ID.
       tags:
-        - decisions
+        - rules
       parameters:
-        - $ref: "#/components/parameters/id-param"
+        - $ref: "#/components/parameters/rule-id-param"
       responses:
         "200":
           description: >
-            Successfully deleted the resource access request decision with the
-            given ID.  It can be found in the response content.
+            Successfully deleted the access rule with the given ID.
+            It can be found in the response content.
           content:
             applications/json:
               schema:
-                $ref: "#/components/schemas/decision"
+                $ref: "#/components/schemas/rule"
         "404":
           description: >
-            No resource access request decision found with the given ID.
-            Failed to delete decision.
+            No access rule found with the given ID.
+            Failed to delete rule.
 
