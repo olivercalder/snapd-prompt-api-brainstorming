@@ -38,7 +38,12 @@ components:
       type: string
     path:
       description: >
-        The path of the object of the prompt request or access rule.
+        The path of the object of the prompt request.
+      type: string
+    path-pattern:
+      description: >
+        The path glob for which the prompt request reply or access rule
+        applies.
       type: string
     permission:
       description: >
@@ -65,10 +70,14 @@ components:
         - link                   # AA_MAY_LINK, process may create hard link
         - change-profile-on-exec # AA_MAY_ONEXEC, process may change the apparmor profile on the next exec call
         - change-profile         # AA_MAY_CHANGE_PROFILE, process may change the apparmor profile on demand
-    allow:
+    action:
       description: >
-        Whether to allow or deny access.
-      type: boolean
+        Whether to permit or deny access to the resource specified in the
+        prompt request or access rule.
+      type: string
+      enum:
+        - permit
+        - deny
     lifespan:
       description: >
         The lifespan for which the access rule should be valid.
@@ -85,38 +94,17 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/permission"
-    path-scope:
-      description: >
-        Apply the same rule on either the path itself, all other files in the
-        directory of the requested path, or all other files in the path's
-        directory and all subdirectories.
-
-        The subdirectories value is a superset of the the directory value.
-
-        If the requested path is a file, then directory access refers to
-        accessing files in the parent directory of the path.
-
-        If the requested path is a directory, then directory access refers to
-        accessing files in that directory.
-      type: string
-      enum:
-        - file
-        - directory
-        - subdirectories
     request:
       description: >
-        An outstanding prompt request for the given snap and app to access
-        the given path with the given permissions.
+        A prompt request for the given snap and app to access the given path
+        with the given permissions.
       type: object
       required:
-        - request-id
         - snap
         - app
         - path
         - permissions
       properties:
-        request-id:
-          $ref: "#/components/schemas/request-id"
         snap:
           $ref: "#/components/schemas/snap"
         app:
@@ -130,33 +118,27 @@ components:
         A reply to a prompt request.
       type: object
       required:
-        - allow
+        - action
         - lifespan
+        - path-pattern
+        - permissions
       properties:
-        allow:
-          $ref: "#/components/schemas/allow"
+        action:
+          $ref: "#/components/schemas/action"
         lifespan:
           $ref: "#/components/schemas/lifespan"
+        path-pattern:
+          $ref: "#/components/schemas/path-pattern"
         permissions:
           $ref: "#/components/schemas/permissions"
-        path-scope:
-          $ref: "#/components/schemas/path-scope"
-      # store-parent:
-      #   description: >
-      #     Store the parent of the requested path in the database,
-      #     rather than the path itself.
-      #   type: boolean
     rule-metadata:
       description: >
-        The metadata for an access rule, including the unique rule ID and the
-        timestamp at which that rule was created or modified.
+        The metadata for an access rule, including the timestamp at which that
+        rule was created or modified.
       type: object
       required:
-        - rule-id
         - timestamp
       properties:
-        rule-id:
-          $ref: "#/components/schemas/rule-id"
         timestamp:
           $ref: "#/components/schemas/timestamp"
     rule-contents:
@@ -166,56 +148,29 @@ components:
       required:
         - snap
         - app
-        - path
-        - allow
+        - path-pattern
+        - action
         - lifespan
         - permissions
-        - path-scope
       properties:
         snap:
           $ref: "#/components/schemas/snap"
         app:
           $ref: "#/components/schemas/app"
-        path:
-          $ref: "#/components/schemas/path"
-        allow:
-          $ref: "#/components/schemas/allow"
+        path-pattern:
+          $ref: "#/components/schemas/path-pattern"
+        action:
+          $ref: "#/components/schemas/action"
         lifespan:
           $ref: "#/components/schemas/lifespan"
         permissions:
           $ref: "#/components/schemas/permissions"
-        path-scope:
-          $ref: "#/components/schemas/path-scope"
     rule:
       description: >
-        A saved access rule with a corresponding ID and timestamp.
+        A saved access rule.
       allOf:
         - $ref: "#/components/schemas/rule-metadata"
         - $ref: "#/components/schemas/rule-contents"
-    changed-rules:
-      description: >
-        The access rules which have been created, modified, or deleted as
-        the result of a change.
-      type: object
-      properties:
-        new:
-          description: >
-            The access rules which have been created.
-          type: array
-          items:
-            $ref: "#/components/schemas/rule"
-        modified:
-          description: >
-            The access rules which have been modified.
-          type: array
-          items:
-            $ref: "#/components/schemas/rule"
-        deleted:
-          description: >
-            The access rules which have been deleted.
-          type: array
-          items:
-            $ref: "#/components/schemas/rule"
   parameters:
     request-id-param:
       description: >
@@ -265,9 +220,10 @@ paths:
               schema:
                 description: >
                   The prompt requests which are currently pending.
-                type: array
-                items:
-                  $ref: "#/components/schemas/request"
+                type: object
+                patternProperties:
+                  "^.*$": # prompt request id pattern
+                    $ref: "#/components/schemas/request"
         "404":
           description: >
             Failed to retrieve prompt requests.
@@ -316,11 +272,7 @@ paths:
         "200":
           description: >
             Successfully received the reply for the prompt request with the
-            given ID.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/changed-rules"
+            given ID and created a corresponding access rule.
         "404":
           description: >
             No request found with the given ID, ignoring reply.
@@ -379,9 +331,10 @@ paths:
               schema:
                 description: >
                   The existing access rules.
-                type: array
-                items:
-                  $ref: "#/components/schemas/rule"
+                type: object
+                patternProperties:
+                  "^.*$": # access rule id pattern
+                    $ref: "#/components/schemas/rule"
         "400":
           description: >
             The `snap` parameter is required when using the `app` or `follow`
@@ -390,74 +343,75 @@ paths:
           description: >
             Failed to retrieve existing access rules from the rule database.
     POST:
-      operationId: addRule
-      summary: Create a new access rule
+      operationId: addDeleteRules
+      summary: Create or delete access rules
       description: >
-        Directly create a new access rule without having previously been
-        prompted with a prompt request.
+        Directly create new access rules without having previously been
+        prompted with a prompt request, or delete previously-stored access
+        rules from the database.
       tags:
         - rules
       requestBody:
         description: >
-          The contents of the access rule to be added.
+          The action to take (`create` or `delete`), and the corresponding
+          information corresponding to that action.
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/rule-contents"
-      responses:
-        "200":
-          description: >
-            Successfully added the given access rule.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/changed-rules"
-        "404":
-          description: >
-            Failed to create the given access rule.
-    DELETE:
-      operationId: deleteRules
-      summary: Delete existing access rules
-      description: >
-        Delete previously-stored access rules for the given snap from the rule
-        database.
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  description: >
+                    Whether to create or delete access rules.
+                  type: string
+                  enum:
+                    - create
+                    - delete
+                create-rules:
+                  description: >
+                    The contents of the access rules to add to the database.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/rule-contents"
+                delete-rules:
+                  description: >
+                    The list of snaps (and optionally apps) for which to delete
+                    access rules.
+                  type: array
+                  items:
+                    description: >
+                      The snap (and optionally app) for which to delete access
+                      rules.
 
-        If the `app` parameter is given, only delete rules for that app within
-        the given snap.
-      tags:
-        - rules
-      parameters:
-        - name: snap
-          in: query
-          description: >
-            The snap for which to delete access rules.
-          required: true
-          schema:
-            $ref: "#/components/schemas/snap"
-        - name: app
-          in: query
-          description: >
-            The app within the given snap for which to delete access rules.
-          required: false
-          schema:
-            $ref: "#/components/schemas/app"
+                      If the `app` parameter is given, only delete rules for
+                      that app within the given snap.
+                    type: object
+                    required:
+                      - snap
+                    properties:
+                      snap:
+                        $ref: "#/components/schemas/snap"
+                      app:
+                        $ref: "#/components/schemas/app"
       responses:
         "200":
           description: >
-            Successfully deleted access rules.
-            All deleted rules can be found in the response content.
+            Successfully added or deleted the given access rule.
           content:
             application/json:
               schema:
                 description: >
-                  The access rules which were deleted.
-                type: array
-                items:
-                  $ref: "#/components/schemas/rule"
+                  The access rules which were created or deleted.
+                type: object
+                patternProperties:
+                  "^.*$": # access rule id pattern
+                    $ref: "#/components/schemas/rule"
         "404":
           description: >
-            Failed to delete access rules from the rule database.
+            Failed to create or delete the given access rules.
   /v2/access-control/rules/{id}:
     GET:
       operationId: getRuleWithId
@@ -480,48 +434,41 @@ paths:
           description: >
             No access rule found with the given ID.
     POST:
-      operationId: modifyRuleWithId
-      summary: Modify an existing access rule
+      operationId: modifyDeleteRuleWithId
+      summary: Modify or delete an existing access rule
       description: >
-        Modify the access rule corresponding to the given request ID.
+        Modify or delete the access rule with the given request ID.
       tags:
         - rules
       parameters:
         - $ref: "#/components/parameters/rule-id-param"
       requestBody:
         description: >
-          The updated contents of the reply for the given access rule.
+          The updated contents of the reply for the access rule with the given
+          ID.
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/reply"
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  description: >
+                    Whether to modify or delete the access rule.
+                  type: string
+                  enum:
+                    - modify
+                    - delete
+                modified-rule:
+                  $ref: "#/components/schemas/reply"
       responses:
         "200":
           description: >
-            Successfully modified the access rule with the given ID.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/changed-rules"
-        "404":
-          description: >
-            No access rule found with the given ID.
-            Ignored the given reply information.
-    DELETE:
-      operationId: deleteRuleWithId
-      summary: Delete an access rule.
-      description: >
-        Delete the access rule with the given ID.
-      tags:
-        - rules
-      parameters:
-        - $ref: "#/components/parameters/rule-id-param"
-      responses:
-        "200":
-          description: >
-            Successfully deleted the access rule with the given ID.
-            It can be found in the response content.
+            Successfully modified or deleted the access rule with the given ID.
+
+            If the rule was deleted, it can be found in the response content.
           content:
             applications/json:
               schema:
@@ -529,5 +476,5 @@ paths:
         "404":
           description: >
             No access rule found with the given ID.
-            Failed to delete rule.
+            Ignored the given request body information.
 
